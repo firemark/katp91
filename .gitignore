@@ -1,0 +1,8 @@
+obj_dir
+db
+output_files
+*.qpf
+*.qsf
+*.qws
+*.hex
+Vcpu
