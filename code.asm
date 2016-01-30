@@ -1,0 +1,10 @@
+MOV R0 0xDE ;print funny text in hex
+MOV R2 0xAD
+MOV R1 0xBE
+MOV R3 0xEF
+MOV R4 0x0F
+MOV R5 0xF0
+ADD R4 R5
+ADD R5 0xF0
+SUB R4 0xF0
+HLT
