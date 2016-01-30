@@ -6,8 +6,14 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 	output reg r, w;
 	output reg halt;
 	
-	byte registers[0:15];
-	bit [15:0] pc;
+	byte rg[0:15]; //8bit registers
+    shortint erg[0:3]; //16bit extended registers
+    assign erg[3] = {rg[15], rg[14]};
+    assign erg[2] = {rg[13], rg[12]};
+    assign erg[1] = {rg[11], rg[10]};
+    assign erg[0] = {rg[9], rg[8]};
+
+	shortint pc;
 	bit [3:0] counter;
 	bit carry;
 	bit zero;
@@ -46,6 +52,7 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 		GROUP_OTHERS = 'b110,
 		GROUP_WRONG = 'b111
 	} operator_group;
+
 	
 	initial begin
 		halt = 0;
@@ -68,14 +75,14 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			operator_group.name(), math_operator.name(), 
 			reg_num, value, value);
 		case(math_operator)
-			OP_ADD:  {carry, registers[reg_num]} <= registers[reg_num] + value;
-			OP_SUB: {carry, registers[reg_num]} <= registers[reg_num] - value;
-			OP_AND: registers[reg_num] <= registers[reg_num] & value;
-			OP_OR: registers[reg_num] <= registers[reg_num] | value;
-			OP_XOR: registers[reg_num] <= registers[reg_num] ^ value;
-			OP_CMP: registers[reg_num] <= 0;
-			OP_MOV: registers[reg_num] <= value;
-			default: registers[reg_num] <= 0;
+			OP_ADD: {carry, rg[reg_num]} <= rg[reg_num] + value;
+			OP_SUB: {carry, rg[reg_num]} <= rg[reg_num] - value;
+			OP_AND: rg[reg_num] <= rg[reg_num] & value;
+			OP_OR: rg[reg_num] <= rg[reg_num] | value;
+			OP_XOR: rg[reg_num] <= rg[reg_num] ^ value;
+			OP_CMP: rg[reg_num] <= 0;
+			OP_MOV: rg[reg_num] <= value;
+			default: rg[reg_num] <= 0;
 		endcase
 	end endtask
 
@@ -109,7 +116,7 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			end
 			GROUP_MATH_REG: begin
 				reg_num = second_byte[3:0];
-				compute(registers[second_byte[7:4]]);
+				compute(rg[second_byte[7:4]]);
 				counter = 0;
 			end
 			GROUP_OTHERS: begin
@@ -135,9 +142,12 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 					zero, carry, overflow, negative);
 				for(i=0; i < 8; i=i+1) begin
 					$display("R%h = %h (%d) R%h = %h (%d)", 
-						i<<1, registers[i<<1], registers[i<<1],
-						(i<<1)+1'b1, registers[(i<<1)+1'b1], registers[(i<<1)+1'b1]);
+						i<<1, rg[i<<1], rg[i<<1],
+						(i<<1)+1'b1, rg[(i<<1)+1'b1], rg[(i<<1)+1'b1]);
 				end
+                for(i=0; i < 4; i=i+1) begin
+                    $display("ER%h = %h (%d)", i, erg[i], erg[i]);
+                end
 
 				adress_bus = pc;
 				pc = pc + 16'b1;
