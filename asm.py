@@ -15,11 +15,6 @@ math_constant_opcodes = {
     'SBC': 0b0011,
 }
 
-math_reg_opcodes = {
-    'SWP': 0b0011,
-}
-math_reg_opcodes.update(math_constant_opcodes)
-
 other_opcodes = {
     'HLT': 0b111,
     'NOP': 0b110,
@@ -28,6 +23,7 @@ other_opcodes = {
 raw_asm_formats = {
     'MATH_CONST': r'^(?P<op>\w+)\s*R(?P<x>[0-9A-F])\s*(?P<val>0x[0-9A-F]+|[0-9]+)$',
     'MATH_REG': r'^(?P<op>\w+)\s*R(?P<x>[0-9A-F])\s*R(?P<y>[0-9A-F]+)$',
+    'MATH_EREG': r'^(?P<op>\w+)\s*ER(?P<x>[0-3])\s*ER(?P<y>[0-3]+)$',
     'OTHER': r'^(?P<op>\w+)$',
 }
 
@@ -57,6 +53,7 @@ class LineParser(object):
             return self.parse()
         except LineParserError as e:
             errs.append(str(e))
+            return []
 
     def parse(self):
         group_name, match = next(filter(
@@ -82,11 +79,21 @@ class LineParser(object):
             self.val_to_int(val),
         ]  
 
+    def group_branch(self, op, label):
+        pass
+
     def group_math_reg(self, op, x, y):
-        opcode = self.get_opcode(op, math_reg_opcodes)
+        opcode = self.get_opcode(op, math_constant_opcodes)
         return [
             (opcode << 4) + 0b111,
             (int(y, 16) << 4) + int(x, 16),
+        ]
+
+    def group_math_ereg(self, op, x, y):
+        opcode = self.get_opcode(op, math_constant_opcodes)
+        return[
+            ((opcode & 0b111) << 5) + 0b1111,
+            ((opcode & 0b1000) >> 3) + (int(x) << 1) + (int(y) << 3)
         ]
 
     def group_other(self, op):
@@ -124,6 +131,7 @@ def parse_to_bytecode(data):
         return bytecode
 
     sys.stderr.write('\n'.join(errs))
+    sys.stderr.write('\n')
     exit(-1)
 
 if __name__ == '__main__':

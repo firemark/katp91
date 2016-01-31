@@ -2,6 +2,8 @@ MOV RF 0xBE ;print funny text in hex
 MOV RE 0xEF
 MOV RD 0xDE
 MOV RC 0xAD
+MOV ER0 ER3
+ADD ER0 ER2
 MOV R4 0x0F
 MOV R5 0xF0
 ADD R4 R5

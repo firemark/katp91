@@ -46,11 +46,12 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 	} other_operator;
 	
 	enum bit [2:0] {
-		GROUP_MATH_CONSTANT = 'b000,
-		GROUP_MATH_REG = 'b001,
-		GROUP_BRANCH_JUMPS = 'b010,
-		GROUP_OTHERS = 'b110,
-		GROUP_WRONG = 'b111
+		GROUP_MATH_CONSTANT,
+		GROUP_MATH_REG,
+		GROUP_MATH_EREG,
+		GROUP_BRANCH_JUMPS,
+		GROUP_OTHERS,
+		GROUP_WRONG
 	} operator_group;
 
 	
@@ -78,15 +79,41 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			OP_ADD: {carry, rg[reg_num]} <= {1'b0, rg[reg_num]} + {1'b0, value};
 			OP_SUB: {carry, rg[reg_num]} <= {1'b0, rg[reg_num]} - {1'b0, value};
 			OP_ADC:
-                {carry, rg[reg_num]} <= {1'b0, g[reg_num]} + {1'b0, value} + {8'b0, carry};
+                {carry, rg[reg_num]} <= {1'b0, rg[reg_num]} + {1'b0, value} + {8'b0, carry};
 			OP_SBC:
-                {carry, rg[reg_num]} <= {1'b0, g[reg_num]} - {1'b0, value} - {8'b0, carry};
+                {carry, rg[reg_num]} <= {1'b0, rg[reg_num]} - {1'b0, value} - {8'b0, carry};
 			OP_AND: rg[reg_num] <= rg[reg_num] & value;
 			OP_OR: rg[reg_num] <= rg[reg_num] | value;
 			OP_XOR: rg[reg_num] <= rg[reg_num] ^ value;
 			OP_CMP: rg[reg_num] <= 0;
 			OP_MOV: rg[reg_num] <= value;
 			default: rg[reg_num] <= 0;
+		endcase
+	end endtask
+
+	task compute16;
+		input shortint value;
+        bit [1:0] ereg_num;
+        assign ereg_num = reg_num[2:1];
+	begin
+		$display("%s %s ER%h VAL %h (%d)", 
+			operator_group.name(), math_operator.name(), 
+			ereg_num, value, value);
+		case(math_operator)
+			OP_ADD:
+                {carry, rg[reg_num+1], rg[reg_num]} <= {1'b0, erg[ereg_num]} + {1'b0, value};
+			OP_SUB:
+                {carry, rg[reg_num+1], rg[reg_num]} <= {1'b0, erg[ereg_num]} - {1'b0, value};
+			OP_ADC:
+                {carry, rg[reg_num+1], rg[reg_num]} <= {1'b0, erg[ereg_num]} + {1'b0, value} + {16'b0, carry};
+			OP_SBC:
+                {carry, rg[reg_num+1], rg[reg_num]} <= {1'b0, erg[ereg_num]} - {1'b0, value} - {16'b0, carry};
+			OP_AND: {rg[reg_num+1], rg[reg_num]} <= erg[ereg_num] & value;
+			OP_OR: {rg[reg_num+1], rg[reg_num]} <= erg[ereg_num] | value;
+			OP_XOR: {rg[reg_num+1], rg[reg_num]} <= erg[ereg_num] ^ value;
+			OP_CMP: {rg[reg_num+1], rg[reg_num]} <= 0;
+			OP_MOV: {rg[reg_num+1], rg[reg_num]} <= value;
+			default: erg[ereg_num] <= 0;
 		endcase
 	end endtask
 
@@ -102,6 +129,9 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 		end else if (first_byte[3:0] == 4'b0111) begin //MATH REG GROUP
 			math_operator = first_byte[7:4];
 			operator_group = GROUP_MATH_REG;
+		end else if (first_byte[4:0] == 4'b01111) begin //MATH EREG GROUP
+			math_operator[2:0] = first_byte[7:5];
+			operator_group = GROUP_MATH_EREG;
 		end else if (first_byte[4:0] == 5'b11111) begin //OTHERS
 			operator_group = GROUP_OTHERS;
 			other_operator = first_byte[7:5];
@@ -121,6 +151,12 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			GROUP_MATH_REG: begin
 				reg_num = second_byte[3:0];
 				compute(rg[second_byte[7:4]]);
+				counter = 0;
+			end
+			GROUP_MATH_EREG: begin
+                math_operator[3] = second_byte[0];
+				reg_num = {1'b1, second_byte[2:1], 1'b0};
+				compute16(erg[second_byte[4:3]]);
 				counter = 0;
 			end
 			GROUP_OTHERS: begin
