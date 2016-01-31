@@ -31,7 +31,7 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 		OP_MOV = 'b1010,
 		OP_CMP = 'b1100,
 		OP_ADC = 'b0001,
-		OP_SBC = 'b0101
+		OP_SBC = 'b0011
 		//OP_SWP = 'b1000
 	} math_operator;
 
@@ -75,8 +75,12 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			operator_group.name(), math_operator.name(), 
 			reg_num, value, value);
 		case(math_operator)
-			OP_ADD: {carry, rg[reg_num]} <= rg[reg_num] + value;
-			OP_SUB: {carry, rg[reg_num]} <= rg[reg_num] - value;
+			OP_ADD: {carry, rg[reg_num]} <= {1'b0, rg[reg_num]} + {1'b0, value};
+			OP_SUB: {carry, rg[reg_num]} <= {1'b0, rg[reg_num]} - {1'b0, value};
+			OP_ADC:
+                {carry, rg[reg_num]} <= {1'b0, g[reg_num]} + {1'b0, value} + {8'b0, carry};
+			OP_SBC:
+                {carry, rg[reg_num]} <= {1'b0, g[reg_num]} - {1'b0, value} - {8'b0, carry};
 			OP_AND: rg[reg_num] <= rg[reg_num] & value;
 			OP_OR: rg[reg_num] <= rg[reg_num] | value;
 			OP_XOR: rg[reg_num] <= rg[reg_num] ^ value;
@@ -89,7 +93,7 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 	task check_first_byte;
 		input byte first_byte;
 	begin
-		if (first_byte[0] == 1'b0 || first_byte[1:0] == 2'b10) begin //MATH CONSTANT GROUP
+		if (first_byte[0] == 1'b0 || first_byte[1:0] == 2'b01) begin //MATH CONSTANT GROUP
 			reg_num = first_byte[7:4];
 			math_operator = first_byte[3:0];
 			operator_group = GROUP_MATH_CONSTANT;

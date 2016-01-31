@@ -11,6 +11,8 @@ math_constant_opcodes = {
     'XOR': 0b1000,
     'MOV': 0b1010,
     'CMP': 0b1100,
+    'ADC': 0b0001,
+    'SBC': 0b0011,
 }
 
 math_reg_opcodes = {
