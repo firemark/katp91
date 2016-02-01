@@ -8,20 +8,21 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 	
 	byte rg[0:15]; //8bit registers
     shortint erg[0:3]; //16bit extended registers
-    assign erg[3] = {rg[15], rg[14]};
-    assign erg[2] = {rg[13], rg[12]};
-    assign erg[1] = {rg[11], rg[10]};
-    assign erg[0] = {rg[9], rg[8]};
-
-	shortint pc;
-	bit [3:0] counter;
+	shortint pc; //programer counter
+	bit [3:0] counter; //cycle
 	bit carry;
 	bit zero;
 	bit overflow;
 	bit negative;
 	
+    assign erg[3] = {rg[15], rg[14]};
+    assign erg[2] = {rg[13], rg[12]};
+    assign erg[1] = {rg[11], rg[10]};
+    assign erg[0] = {rg[9], rg[8]};
+
 	bit [3:0] reg_num;
 	bit [3:0] i;
+    bit [8:0] pc_branch_jump;
 	enum bit [3:0] {
 		OP_ADD = 'b0000,
 		OP_SUB = 'b0010,
@@ -45,6 +46,22 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 		OP_HLT = 'b111
 	} other_operator;
 	
+    enum bit [3:0] {
+        OP_BREQ = 'b0000, //equality
+        OP_BRNE = 'b0001, //not equality
+        OP_BRLT = 'b0010, //less than
+        OP_BRGE = 'b0011, //great and eq
+        OP_BRC = 'b00100, //carry
+        OP_BRO = 'b0101, //overflow
+        OP_BRN = 'b0110, //negative
+        OP_BRNC = 'b0111, //not carry
+        OP_BRNO = 'b1000, //not  overflow
+        OP_BRNN = 'b1001, //not negative
+        OP_BRLO = 'b1010, //lower 
+        OP_BRSH = 'b1011, //same and higher
+        OP_RJMP = 'b1100 //restricted jump
+    } branch_operator;
+
 	enum bit [2:0] {
 		GROUP_MATH_CONSTANT,
 		GROUP_MATH_REG,
@@ -53,7 +70,6 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 		GROUP_OTHERS,
 		GROUP_WRONG
 	} operator_group;
-
 	
 	initial begin
 		halt = 0;
@@ -113,9 +129,29 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			OP_XOR: {rg[reg_num+1], rg[reg_num]} <= erg[ereg_num] ^ value;
 			OP_CMP: {rg[reg_num+1], rg[reg_num]} <= 0;
 			OP_MOV: {rg[reg_num+1], rg[reg_num]} <= value;
-			default: erg[ereg_num] <= 0;
+			default: {rg[reg_num+1], rg[reg_num]} <= 0;
 		endcase
 	end endtask
+
+	function bit check_branch;
+	begin
+		$display("%s %s", operator_group.name(), branch_operator.name());
+		case (branch_operator)
+			OP_BREQ: check_branch = zero;
+			OP_BRNE: check_branch = ~zero;
+			OP_BRLT: check_branch = negative ^ overflow;
+			OP_BRGE: check_branch = ~(negative ^ overflow);
+			OP_BRC: check_branch = carry;
+			OP_BRNC: check_branch = ~carry;
+			OP_BRO: check_branch = overflow;
+			OP_BRNO: check_branch = ~overflow;
+			OP_BRN: check_branch = negative;
+			OP_BRNN: check_branch = ~negative;
+			OP_BRSH: check_branch = zero | carry;
+			OP_BRLO: check_branch = zero | carry;
+			OP_RJMP: check_branch = 1;
+		endcase
+	end endfunction
 
 	task check_first_byte;
 		input byte first_byte;
@@ -124,8 +160,10 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			reg_num = first_byte[7:4];
 			math_operator = first_byte[3:0];
 			operator_group = GROUP_MATH_CONSTANT;
-		end else if (first_byte[1:0] == 2'b01) begin //BRANCH JUMPS GROUP
+		end else if (first_byte[2:0] == 3'b011) begin //BRANCH JUMPS GROUP
 			operator_group = GROUP_BRANCH_JUMPS;
+            branch_operator = first_byte[6:3];
+            pc_branch_jump[8] = first_byte[7];
 		end else if (first_byte[3:0] == 4'b0111) begin //MATH REG GROUP
 			math_operator = first_byte[7:4];
 			operator_group = GROUP_MATH_REG;
@@ -159,6 +197,12 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 				compute16(erg[second_byte[4:3]]);
 				counter = 0;
 			end
+            GROUP_BRANCH_JUMPS: begin
+                pc_branch_jump[7:0] = second_byte;
+                if (check_branch())
+                    pc = pc + {{7{pc_branch_jump[8]}}, pc_branch_jump} - 2;
+                counter = 0;
+            end
 			GROUP_OTHERS: begin
 				case(other_operator)
 					OP_HLT: begin halt = 1; $finish; end

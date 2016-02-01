@@ -1,3 +1,7 @@
+LOOP: ;prepare loop
+    ADD R8 1
+    ADD R9 1
+    RJMP loop
 MOV RF 0xBE ;print funny text in hex
 MOV RE 0xEF
 MOV RD 0xDE
@@ -12,4 +16,6 @@ ADD R5 0xF0
 MOV R6 0xFF
 ADD R6 0x01
 ADC R7 0x01
+MOV R8 0
+MOV R9 0
 HLT
