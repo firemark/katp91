@@ -87,10 +87,12 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 	
 	task compute;
 		input byte value;
+		bit old_sign;
 	begin
 		$display("%s %s R%h VAL %h (%d)", 
 			operator_group.name(), math_operator.name(), 
 			reg_num, value, value);
+		old_sign <= rg[reg_num][7];
 		case(math_operator)
 			OP_ADD: {carry, rg[reg_num]} <= {1'b0, rg[reg_num]} + {1'b0, value};
 			OP_SUB: {carry, rg[reg_num]} <= {1'b0, rg[reg_num]} - {1'b0, value};
@@ -105,16 +107,23 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			OP_MOV: rg[reg_num] <= value;
 			default: rg[reg_num] <= 0;
 		endcase
+		if (math_operator != OP_CMP) begin
+			overflow <= old_sign ^ rg[reg_num][7];
+			zero <= rg[reg_num] == 8'b0;
+			negative <= rg[reg_num][7];
+		end
 	end endtask
 
 	task compute16;
 		input shortint value;
         bit [1:0] ereg_num;
+        bit old_sign;
         assign ereg_num = reg_num[2:1];
 	begin
 		$display("%s %s ER%h VAL %h (%d)", 
 			operator_group.name(), math_operator.name(), 
 			ereg_num, value, value);
+		old_sign <= erg[ereg_num][15];
 		case(math_operator)
 			OP_ADD:
                 {carry, rg[reg_num+1], rg[reg_num]} <= {1'b0, erg[ereg_num]} + {1'b0, value};
@@ -131,6 +140,11 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			OP_MOV: {rg[reg_num+1], rg[reg_num]} <= value;
 			default: {rg[reg_num+1], rg[reg_num]} <= 0;
 		endcase
+		if (math_operator != OP_CMP) begin
+			overflow <= old_sign ^ erg[ereg_num][15];
+			zero <= erg[ereg_num] == 16'b0;
+			negative <= erg[ereg_num][15];
+		end
 	end endtask
 
 	function bit check_branch;
