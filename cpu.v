@@ -9,7 +9,7 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 	byte rg[0:15]; //8bit registers
     shortint erg[0:3]; //16bit extended registers
 	shortint pc; //programer counter
-	bit [3:0] counter; //cycle
+	bit [3:0] cycle;
 	bit carry;
 	bit zero;
 	bit overflow;
@@ -73,14 +73,14 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 	
 	initial begin
 		halt = 0;
-		counter = 0;
+		cycle = 0;
 		pc = 16'h2000;
 	end
 	
 	always @(reset) begin
 		if (~reset) begin
 			halt = 0;
-			counter = 0;
+			cycle = 0;
 			pc = 16'h2000;
 		end
 	end
@@ -115,11 +115,10 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			OP_MOV: rg[reg_num] <= value;
 			default: rg[reg_num] <= 0;
 		endcase
-		if (math_operator != OP_CMP or math_operator != OP_MOV) begin
+		if (math_operator != OP_CMP && math_operator != OP_MOV) begin
 			overflow = old_sign ^ rg[reg_num][7];
 			zero = rg[reg_num] == 8'b0;
 			negative = rg[reg_num][7];
-			$display("flags: Ov:%b Z:%b N:%b C:%b", overflow, zero, negative, carry);
 		end
 	end endtask
 
@@ -155,7 +154,7 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			OP_MOV: {rg[reg_num+1], rg[reg_num]} = value;
 			default: {rg[reg_num+1], rg[reg_num]} = 0;
 		endcase
-		if (math_operator != OP_CMP or math_operator != OP_MOV) begin
+		if (math_operator != OP_CMP && math_operator != OP_MOV) begin
 			overflow = old_sign ^ erg[ereg_num][15];
 			zero = erg[ereg_num] == 16'b0;
 			negative = erg[ereg_num][15];
@@ -176,8 +175,8 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			OP_BRNO: check_branch = ~overflow;
 			OP_BRN: check_branch = negative;
 			OP_BRNN: check_branch = ~negative;
-			OP_BRSH: check_branch = zero | carry;
-			OP_BRLO: check_branch = zero | carry;
+			OP_BRLO: check_branch = carry;
+			OP_BRSH: check_branch = ~carry;
 			OP_RJMP: check_branch = 1;
 		endcase
 	end endfunction
@@ -213,41 +212,41 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 		case(operator_group)
 			GROUP_MATH_CONSTANT: begin 
 				compute(second_byte);
-				counter = 0;
+				cycle = 0;
 			end
 			GROUP_MATH_REG: begin
 				reg_num = second_byte[3:0];
 				compute(rg[second_byte[7:4]]);
-				counter = 0;
+				cycle = 0;
 			end
 			GROUP_MATH_EREG: begin
                 math_operator[3] = second_byte[0];
 				reg_num = {1'b1, second_byte[2:1], 1'b0};
 				compute16(erg[second_byte[4:3]]);
-				counter = 0;
+				cycle = 0;
 			end
             GROUP_BRANCH_JUMPS: begin
                 pc_branch_jump[7:0] = second_byte;
                 if (check_branch())
                     pc = pc + {{7{pc_branch_jump[8]}}, pc_branch_jump} - 2;
-                counter = 0;
+                cycle = 0;
             end
 			GROUP_OTHERS: begin
 				case(other_operator)
 					OP_HLT: begin halt = 1; $finish; end
 				endcase
-				counter = 0;
+				cycle = 0;
 			end
 			default: begin
 				$display("%s", operator_group.name());
 				pc = pc + 16'b1;
-				counter = 0;
+				cycle = 0;
 			end
 		endcase
 	end endtask
 	
 	always @(posedge clk or negedge clk, negedge reset) begin
-		if (~halt) case(counter)
+		if (~halt) case(cycle)
 			0: begin
 				$display("PC %h ADDR %h DATA %h HALT %b", 
 					pc, adress_bus, date_bus, halt);
@@ -266,25 +265,25 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 				pc = pc + 16'b1;
 				date_bus = 8'bz;
 				r = 1'b1;
-				counter = 1;
+				cycle = 1;
 			end
 			1: begin
 				r = 1'b0;
 				check_first_byte(date_bus);
-				counter = 2;
+				cycle = 2;
 			end
 			2: begin
 				adress_bus = pc;
 				pc = pc + 16'b1;
 				date_bus = 8'bz;
 				r = 1'b1;
-				counter = 3;
+				cycle = 3;
 			end
 			3: begin
 				r = 1'b0;
 				check_second_byte(date_bus);
 			end
-			default: counter = 0;
+			default: cycle = 0;
 		endcase
 	end
 	
