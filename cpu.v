@@ -95,8 +95,10 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			reg_num, value, value);
 		old_sign = rg[reg_num][7];
 		case(math_operator)
-			OP_ADD: {carry, rg[reg_num]} = {1'b0, rg[reg_num]} + {1'b0, value};
-			OP_SUB: {carry, rg[reg_num]} = {1'b0, rg[reg_num]} - {1'b0, value};
+			OP_ADD: 
+				{carry, rg[reg_num]} = {1'b0, rg[reg_num]} + {1'b0, value};
+			OP_SUB: 
+				{carry, rg[reg_num]} = {1'b0, rg[reg_num]} - {1'b0, value};
 			OP_ADC:
                 {carry, rg[reg_num]} = {1'b0, rg[reg_num]} + {1'b0, value} + {8'b0, carry};
 			OP_SBC:
@@ -113,7 +115,7 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			OP_MOV: rg[reg_num] <= value;
 			default: rg[reg_num] <= 0;
 		endcase
-		if (math_operator != OP_CMP) begin
+		if (math_operator != OP_CMP or math_operator != OP_MOV) begin
 			overflow = old_sign ^ rg[reg_num][7];
 			zero = rg[reg_num] == 8'b0;
 			negative = rg[reg_num][7];
@@ -153,7 +155,7 @@ module cpu (clk, reset, date_bus, adress_bus, r, w, halt);
 			OP_MOV: {rg[reg_num+1], rg[reg_num]} = value;
 			default: {rg[reg_num+1], rg[reg_num]} = 0;
 		endcase
-		if (math_operator != OP_CMP) begin
+		if (math_operator != OP_CMP or math_operator != OP_MOV) begin
 			overflow = old_sign ^ erg[ereg_num][15];
 			zero = erg[ereg_num] == 16'b0;
 			negative = erg[ereg_num][15];
