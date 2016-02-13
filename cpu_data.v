@@ -11,7 +11,6 @@ typedef enum bit [3:0] {
     OP_XOR = 'b1000,
     OP_MOV = 'b1010,
     OP_CMP = 'b1100
-    //OP_SWP = 'b1000
 } Math_operator;
 
 typedef enum bit [3:0] {
@@ -48,10 +47,10 @@ typedef enum bit [2:0] {
     OP_LD = 'b000,
     OP_LDI = 'b001,
     OP_LDD = 'b010,
-    OP_ST = 'b011,
-    OP_STI = 'b100,
-    OP_STD = 'b101
-} Register_memory_operator;
+    OP_ST = 'b100,
+    OP_STI = 'b101,
+    OP_STD = 'b110
+} Reg_memory_operator;
 
 typedef enum bit [3:0] {
     OP_JMP = 'b0000,

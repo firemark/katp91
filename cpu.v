@@ -23,12 +23,14 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
     assign erg[0] = {rg[9], rg[8]};
 
 	bit [3:0] reg_num;
+	bit [1:0] mem_ereg_num;
 	bit [3:0] i;
     bit [8:0] pc_branch_jump;
 
 	Math_operator math_operator;
 	Other_operator other_operator;
 	Branch_operator branch_operator;
+	Reg_memory_operator reg_memory_operator;
 	Operator_group operator_group;
 
 	`include "cpu_computes.v"
@@ -85,6 +87,15 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
 			3: begin
 				r = 1'b0;
 				check_second_byte(date_bus);
+			end
+			4: begin
+				first_extend_action();
+				cycle = 5;
+			end
+			5: begin
+				r = 1'b0;
+				w = 1'b0;
+				second_extend_action();
 			end
 			default: cycle = 0;
 		endcase

@@ -37,10 +37,20 @@ branch_opcodes = {
     'RJMP': 0b1100,
 }
 
+reg_memory_opcodes = {
+    'LD': 0b000,
+    'LDI': 0b001,
+    'LDD': 0b010,
+    'ST': 0b100,
+    'STI': 0b101,
+    'STD': 0b110,
+}
+
 raw_asm_formats = [
     ('MATH_CONST', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])\s+(?P<val>0x[0-9A-F]+|[0-9]+)$'),
     ('MATH_REG', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])\s+R(?P<y>[0-9A-F]+)$'),
     ('MATH_EREG', r'^(?P<op>\w+)\s+ER(?P<x>\d)\s+ER(?P<y>\d+)$'),
+    ('REG_MEMORY', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])\s+ER(?P<y>\d+)$'),
     ('BRANCH', r'^(?P<op>\w+)\s+(?P<label>\w+)'),
     ('OTHER', r'^(?P<op>\w+)$'),
     ('NOTHING', r'^$'),
@@ -55,6 +65,7 @@ asm_format_lengths = {
     'MATH_CONST': 2,
     'MATH_REG': 2,
     'MATH_EREG': 2,
+    'REG_MEMORY': 2,
     'BRANCH': 2,
     'SPECIAL': 4,
     'OTHER': 2,
@@ -159,14 +170,25 @@ class LineParser(object):
         if iy > 3:
             self.raise_error('register ER%s is unknown' % y)
         opcode = self.get_opcode(op, math_opcodes)
-        return[
+        return [
             ((opcode & 0b111) << 5) + 0b1111,
-            ((opcode & 0b1000) >> 3) + (int(x) << 1) + (int(y) << 3)
+            ((opcode & 0b1000) >> 3) + (ix << 1) + (iy << 3)
+        ]
+
+    def group_reg_memory(self, op, x, y):
+        ix = int(x, 16)
+        iy = int(y)
+        if iy > 3:
+            self.raise_error('register ER%s is unknown' % y)
+        opcode = self.get_opcode(op, reg_memory_opcodes)
+        return [
+            ((opcode & 0b1) << 7) + 0b111111,
+            (opcode >> 1) + (ix << 2) + (iy << 6)
         ]
 
     def group_other(self, op):
         opcode = self.get_opcode(op, other_opcodes)
-        return [(opcode << 5) +  0b11111, 0x00]
+        return [0b11111111, opcode]
 
     def group_nothing(self):
         return []
@@ -178,7 +200,7 @@ class LineParser(object):
         if isinstance(val, int):
             bval = val
         elif val.startswith('0x'):
-            bval = int(val[2:4], 16)
+            bval = int(val[2:], 16)
         else:
             bval = int(val)
 
@@ -225,7 +247,7 @@ def parse_to_bytecode(data):
         for line_parser in lines
     ))
     shout_errors(errs)
-    return bytecode
+    return [0x00] * 0x2000 + bytecode
 
 
 def shout_errors(errs):

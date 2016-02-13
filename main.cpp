@@ -30,10 +30,12 @@ int main(int argc, char **argv, char **env) {
         cpu->clk = ~cpu->clk;
         cpu->reset = reset;
         if (cpu->r)
-            cpu->date_bus = ram[cpu->adress_bus - 0x2000];
+            cpu->date_bus = ram[cpu->adress_bus];
+        else if (cpu->w)
+            ram[cpu->adress_bus] = cpu->date_bus;
         cpu->eval();
         main_time++;
-        if (!cpu->halt && main_time % 4 == 0) {
+        if (!cpu->halt && cpu->v__DOT__cycle == 0) {
             printf("TIME %d\n", main_time);
             usleep(1000 * sleep_time);
             system("clear");
