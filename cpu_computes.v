@@ -67,7 +67,7 @@ begin
             negative = temp[15];
         end
         OP_MOV: {rg[reg_num+1], rg[reg_num]} = value;
-        default: {rg[reg_num+1], rg[reg_num]} = 0;
+        default: {rg[reg_num+1], rg[reg_num]} = 1'b0;
     endcase
     if (math_operator != OP_CMP && math_operator != OP_MOV) begin
         overflow = old_sign ^ erg[ereg_num][15];
@@ -92,6 +92,6 @@ begin
         OP_BRNN: check_branch = ~negative;
         OP_BRLO: check_branch = carry;
         OP_BRSH: check_branch = ~carry;
-        OP_RJMP: check_branch = 1;
+        OP_RJMP: check_branch = 1'b1;
     endcase
 end endfunction

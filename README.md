@@ -70,6 +70,13 @@ BRN Ar          if(N=1) PC ← PC + Ar    -
 BRNN Ar         if(N=0) PC ← PC + Ar    -  
 BRLO Ar         if(C=1) PC ← PC + Ar    -
 BRSH Ar         if(C=0) PC ← PC + Ar    -
+##Load/Storage##
+LD Rx ERy       Rx ← (ERy)
+LDI Rx ERy      Rx ← (ERy); ERy ← ERy+1 -
+LDD Rx ERy      Rx ← (ERy); ERy ← ERy-1 -
+ST Rx ERy       (ERy) ← Rx
+STI Rx ERy      (ERy) ← Rx; ERy ← ERy+1 -
+STD Rx ERy      (ERy) ← Rx; ERy ← ERy-1 -
 ##Other commands##
 HLT             H ← 1                   H 
 NOP             nothing

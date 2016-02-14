@@ -86,10 +86,11 @@ begin
     case(operator_group)
         GROUP_REG_MEMORY: begin
             adress_bus = erg[mem_ereg_num];
-            if (reg_memory_operator[2] == 1'b0)
+            if (reg_memory_operator[2] == 1'b0) begin
+                date_bus = 8'bz;
                 r = 1'b1;
-            else
-                w = 1'b1;
+            end else
+                date_bus = rg[reg_num];
         end
     endcase
 end endtask
@@ -104,10 +105,14 @@ begin
                 "%s %s R%h (%h) ER%d (%h)", 
                 operator_group.name(), reg_memory_operator.name(), 
                 reg_num, rg[reg_num], mem_ereg_num, erg[mem_ereg_num]);
-            if (reg_memory_operator[2] == 1'b0)
+            if (reg_memory_operator[2] == 1'b0) begin
                 rg[reg_num] = date_bus;
-            else
-                date_bus = rg[reg_num];
+                w = 1'b0;
+                r = 1'b0;
+            end else begin
+                w = 1'b1;
+                r = 1'b0;
+            end
             case (reg_memory_operator[1:0])
                 2'b01: {rg[ereg_reg_num+1], rg[ereg_reg_num]} = erg[mem_ereg_num] + 16'b1;
                 2'b10: {rg[ereg_reg_num+1], rg[ereg_reg_num]} = erg[mem_ereg_num] - 16'b1;

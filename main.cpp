@@ -29,14 +29,18 @@ int main(int argc, char **argv, char **env) {
     while (!Verilated::gotFinish()) { 
         cpu->clk = ~cpu->clk;
         cpu->reset = reset;
-        if (cpu->r)
+        if (cpu->r){
+            printf("#READ RAM[%04x] = %hhd\n", cpu->date_bus, cpu->adress_bus);
             cpu->date_bus = ram[cpu->adress_bus];
-        else if (cpu->w)
+        }
+        else if (cpu->w){
+            printf("#WRITE RAM[%04x] = %hhd\n", cpu->adress_bus, cpu->date_bus);
             ram[cpu->adress_bus] = cpu->date_bus;
+        }
         cpu->eval();
         main_time++;
         if (!cpu->halt && cpu->v__DOT__cycle == 0) {
-            printf("TIME %d\n", main_time);
+            printf("#TIME %d\n", main_time);
             usleep(1000 * sleep_time);
             system("clear");
         }

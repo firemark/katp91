@@ -70,6 +70,7 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
 				pc = pc + 16'b1;
 				date_bus = 8'bz;
 				r = 1'b1;
+				w = 1'b0;
 				cycle = 1;
 			end
 			1: begin
@@ -93,8 +94,6 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
 				cycle = 5;
 			end
 			5: begin
-				r = 1'b0;
-				w = 1'b0;
 				second_extend_action();
 			end
 			default: cycle = 0;
