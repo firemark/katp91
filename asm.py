@@ -17,8 +17,8 @@ math_opcodes = {
 }
 
 other_opcodes = {
-    'HLT': 0b111,
-    'NOP': 0b110,
+    'HLT': 0b1111,
+    'NOP': 0b1100,
 }
 
 branch_opcodes = {

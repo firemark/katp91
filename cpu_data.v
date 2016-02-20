@@ -62,13 +62,13 @@ typedef enum bit [3:0] {
     OP_CLZ = 'b0001,
     OP_CLO = 'b0010,
     OP_CLN = 'b0011,
-    OP_NOP = 'b0100,
-    OP_HLT = 'b0110,
     OP_RET = 'b0111,
     OP_STC = 'b1000,
     OP_STZ = 'b1001,
     OP_STO = 'b1010,
-    OP_STN = 'b1011
+    OP_STN = 'b1011,
+    OP_NOP = 'b1100,
+    OP_HLT = 'b1111
 } Other_operator;
 
 typedef enum {

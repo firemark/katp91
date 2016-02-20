@@ -69,6 +69,7 @@ begin
             cycle = 4;
         end
         GROUP_OTHERS: begin
+            other_operator = second_byte[4:0];
             case(other_operator)
                 OP_HLT: begin halt = 1; $finish; end
             endcase
