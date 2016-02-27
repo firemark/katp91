@@ -24,6 +24,7 @@ cp obj_dir/Vcpu .
 * K - constant 8bit value
 * Ry/K - 8bit register or constant value
 * Ar - Address Relative - signed 9bit value
+* A - Address - unsigned 16bit value
 * ERx, ERy - 16 bit register where x, y is from 0 to 3
 ```
 ER0 = {R9, R8}
@@ -34,6 +35,7 @@ ER3 = {RF, RE}
 * V - Overflow N - Negative Z - Zero C - Carry
 * H - Halt flag
 * PC - Program counter
+* SP - Stack pointer
 
 #Instructions
 
@@ -67,12 +69,16 @@ LSL (E)Rx       (E)Rx[n+1] ← (E)Rx[n]   C V N Z         2
 LSR (E)Rx       (E)Rx[n] ← (E)Rx[n+1]   C V N Z         2
                 (E)Rx[last bit] ← 0
                 C ← (E)Rx[0]
-ROL (E)Rx       (E)Rx[n+1] ← (E)Rx[n]   C V N Z         2
+ROL (E)Rx       (E)Rx[n+1] ← (E)Rx[n]   V N Z           2
                 (E)Rx[0] ← (E)Rx[last]
-ROR (E)Rx       (E)Rx[n] ← (E)Rx[n+1]   C V N Z         2
+ROR (E)Rx       (E)Rx[n] ← (E)Rx[n+1]   V N Z           2
                 (E)Rx[last] ← (E)Rx[0]
-RLC (E)Rx
-RRC (E)Rx
+RLC (E)Rx       (E)Rx[n+1] ← (E)Rx[n]   C V N Z         2
+                (E)Rx[0] ← C
+                C ← (E)Rx[last bit]
+RRC (E)Rx       (E)Rx[n] ← (E)Rx[n+1]   C V N Z         2
+                (E)Rx[last bit] ← C
+                C ← (E)Rx[0]
 ##Relative Jumps##
 RJMP Ar         PC ← PC + Ar            -               2
 BREQ Ar         if(Z=1) PC ← PC + Ar    -               2
@@ -95,8 +101,8 @@ STD Rx ERy      (ERy) ← Rx; ERy ← ERy-1 -               3
 ##Stack Command
 POP Rx          Rx ← (SP); SP ← SP - 1  -               3
 PUSH Rx         (SP) ← Rx; SP ← SP + 1  -               3
-CALL A
-RET A
+CALL A          PUSH PC; JMP A
+RET             POP PC;
 ##Other commands##
 HLT             H ← 1                   H 
 NOP             nothing
