@@ -32,7 +32,7 @@ begin
     endcase
     if (math_operator != OP_CMP && math_operator != OP_MOV) begin
         overflow = old_sign ^ rg[reg_num][7];
-        zero = rg[reg_num] == 8'b0;
+        zero = &rg[reg_num];
         negative = rg[reg_num][7];
     end
 end endtask
@@ -71,7 +71,7 @@ begin
     endcase
     if (math_operator != OP_CMP && math_operator != OP_MOV) begin
         overflow = old_sign ^ erg[ereg_num][15];
-        zero = erg[ereg_num] == 16'b0;
+        zero = &erg[ereg_num];
         negative = erg[ereg_num][15];
     end
 end endtask
@@ -95,3 +95,51 @@ begin
         OP_RJMP: check_branch = 1'b1;
     endcase
 end endfunction
+
+task single_compute;
+    input byte value;
+    bit old_sign;
+begin
+    $display("%s %s", operator_group.name(), single_operator.name());
+    old_sign = rg[reg_num][7];
+    case (single_operator)
+        OP_NEG: rg[reg_num] = 8'b0 - value;
+        OP_COM: rg[reg_num] = 8'hFF - value;
+        OP_LSL: {carry, rg[reg_num]} = {value, 1'b0};
+        OP_LSR: {rg[reg_num], carry} = {1'b0, value};
+        OP_ROL: rg[reg_num] = {value[6:0], value[7]};
+        OP_ROR: rg[reg_num] = {value[0], value[7:1]};
+        OP_RLC: {carry, rg[reg_num]} = {value, carry};
+        OP_RRC: {rg[reg_num], carry} = {carry, value};
+    endcase
+    if (single_operator != OP_POP && single_operator != OP_PUSH) begin
+        overflow = old_sign ^ rg[reg_num][7];
+        zero = &rg[reg_num];
+        negative = rg[reg_num][7];
+        cycle = 0;
+    end else begin
+        cycle = 4;
+    end
+end endtask;
+
+task single_compute16;
+    input shortint value;
+    bit old_sign;
+begin
+    $display("%s %s", operator_group.name(), single_operator.name());
+    case (single_operator)
+        OP_NEG: {rg[reg_num+1], rg[reg_num]} = 16'b0 - value;
+        OP_COM: {rg[reg_num+1], rg[reg_num]} = 16'hFFFF - value;
+        OP_LSL: {carry, rg[reg_num+1], rg[reg_num]} = {value, 1'b0};
+        OP_LSR: {rg[reg_num+1], rg[reg_num], carry} = {1'b0, value};
+        OP_ROL: {rg[reg_num+1], rg[reg_num]} = {value[14:0], value[15]};
+        OP_ROR: {rg[reg_num+1], rg[reg_num]} = {value[0], value[15:1]};
+        OP_RLC: {carry, rg[reg_num+1], rg[reg_num]} = {value, carry};
+        OP_RRC: {rg[reg_num+1], rg[reg_num], carry} = {carry, value};
+    endcase
+    overflow = old_sign ^ rg[reg_num][7];
+    zero = &rg[reg_num];
+    negative = rg[reg_num][7];
+    cycle = 0;
+end
+endtask;

@@ -46,12 +46,26 @@ reg_memory_opcodes = {
     'STD': 0b110,
 }
 
+simple_reg_opcodes = {
+    'NEG': 0b0000,
+    'COM': 0b0001,
+    'LSL': 0b0010,
+    'LSR': 0b0011,
+    'ROL': 0b0100,
+    'ROR': 0b0101,
+    'RLC': 0b0110,
+    'RRC': 0b0111,
+    'PUSH': 0b1000,
+    'POP': 0b1001,
+}
+
 raw_asm_formats = [
     ('MATH_CONST', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])\s+(?P<val>0x[0-9A-F]+|[0-9]+)$'),
     ('MATH_REG', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])\s+R(?P<y>[0-9A-F]+)$'),
     ('MATH_EREG', r'^(?P<op>\w+)\s+ER(?P<x>\d)\s+ER(?P<y>\d+)$'),
     ('REG_MEMORY', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])\s+ER(?P<y>\d+)$'),
-    ('BRANCH', r'^(?P<op>\w+)\s+(?P<label>\w+)'),
+    ('SIMPLE_REG', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])$'),
+    ('BRANCH', r'^(?P<op>\w+)\s+(?P<label>\w+)$'),
     ('OTHER', r'^(?P<op>\w+)$'),
     ('NOTHING', r'^$'),
 ]
@@ -184,6 +198,14 @@ class LineParser(object):
         return [
             ((opcode & 0b1) << 7) + 0b111111,
             (opcode >> 1) + (ix << 2) + (iy << 6)
+        ]
+    
+    def group_simple_reg(self, op, x):
+        opcode = self.get_opcode(op, simple_reg_opcodes)
+        ix = int(x, 16)
+        return [
+            ((opcode & 0b11) << 6) + 0b11111,
+            (opcode >> 2) + (ix << 2),
         ]
 
     def group_other(self, op):

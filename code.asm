@@ -1,4 +1,10 @@
 ;check save/load from memory
+MOV R0 0xFF
+MOV R1 0xFE
+PUSH R0
+PUSH R1
+POP R2
+POP R3
 MOV R8 0
 MOV R9 0
 MOV R0 0xF1

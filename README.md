@@ -38,45 +38,65 @@ ER3 = {RF, RE}
 #Instructions
 
 ```
-Instruction     Operation               Changed flags 
+Instruction     Operation               Changed flags   Cycles
 ##Arithmetic and Logic##
-ADD Rx ERy/K    Rx ← Rx + ERy/K         C V N Z     
-ADD ERx ERy     ERx ← ERx + ERy         C V N Z 
-ADC Rx Ry/K     Rx ← Rx + Ry/K + C      C V N Z
-ADC ERx ERy     ERx ← ERx + ERy + C     C V N Z 
-SUB Rx Ry/K     Rx ← Rx - Ry/K          C V N Z
-SUB ERx ERy     ERx ← ERx - ERy         C V N Z 
-SBC Rx Ry/K     Rx ← Rx - Ry/K - C      C V N Z
-SUB ERx ERy     ERx ← ERx - ERy - C     C V N Z 
-OR  Rx Ry/K     Rx ← Rx ∨ Ry/K          C V N Z
-OR  ERx ERy     ERx ← ERx ∨ ERy         C V N Z
-AND Rx Ry/K     Rx ← Rx ∧ Ry/K          C V N Z
-AND ERx ERy     ERx ← ERx ∧ ERy         C V N Z
-XOR Rx Ry/K     Rx ← Rx ⊕ Ry/K          C V N Z
-XOR ERx ERy/K   ERx ← ERx ⊕ ERy/K       C V N Z
-MOV Rx Ry/K     Rx ← Ry/K               -
-MOV ERx ERy     ERx ← ERy               -
-CMP Rx Ry/K     Rx ⊕ Ry                 C V N Z
-CMP ERx ERy     ERx ⊕ ERy               C V N Z
+ADD Rx ERy/K    Rx ← Rx + ERy/K         C V N Z         2
+ADD ERx ERy     ERx ← ERx + ERy         C V N Z         2
+ADC Rx Ry/K     Rx ← Rx + Ry/K + C      C V N Z         2
+ADC ERx ERy     ERx ← ERx + ERy + C     C V N Z         2
+SUB Rx Ry/K     Rx ← Rx - Ry/K          C V N Z         2
+SUB ERx ERy     ERx ← ERx - ERy         C V N Z         2
+SBC Rx Ry/K     Rx ← Rx - Ry/K - C      C V N Z         2
+SUB ERx ERy     ERx ← ERx - ERy - C     C V N Z         2
+OR  Rx Ry/K     Rx ← Rx ∨ Ry/K          C V N Z         2
+OR  ERx ERy     ERx ← ERx ∨ ERy         C V N Z         2
+AND Rx Ry/K     Rx ← Rx ∧ Ry/K          C V N Z         2
+AND ERx ERy     ERx ← ERx ∧ ERy         C V N Z         2
+XOR Rx Ry/K     Rx ← Rx ⊕ Ry/K          C V N Z         2
+XOR ERx ERy/K   ERx ← ERx ⊕ ERy/K       C V N Z         2
+MOV Rx Ry/K     Rx ← Ry/K               -               2
+MOV ERx ERy     ERx ← ERy               -               2
+CMP Rx Ry/K     Rx ⊕ Ry                 C V N Z         2
+CMP ERx ERy     ERx ⊕ ERy               C V N Z         2
+NEG (E)Rx       0x00 - (E)Rx            V N Z           2
+COM Rx          0xFF - (E)Rx            V N Z           2
+COM ERx         0xFFFF - ERx            V N Z           2
+LSL (E)Rx       (E)Rx[n+1] ← (E)Rx[n]   C V N Z         2
+                (E)Rx[0] ← 0
+                C ← (E)Rx[last bit]
+LSR (E)Rx       (E)Rx[n] ← (E)Rx[n+1]   C V N Z         2
+                (E)Rx[last bit] ← 0
+                C ← (E)Rx[0]
+ROL (E)Rx       (E)Rx[n+1] ← (E)Rx[n]   C V N Z         2
+                (E)Rx[0] ← (E)Rx[last]
+ROR (E)Rx       (E)Rx[n] ← (E)Rx[n+1]   C V N Z         2
+                (E)Rx[last] ← (E)Rx[0]
+RLC (E)Rx
+RRC (E)Rx
 ##Relative Jumps##
-RJMP Ar         PC ← PC + Ar            -  
-BREQ Ar         if(Z=1) PC ← PC + Ar    -
-BRNE Ar         if(Z=0) PC ← PC + Ar    -  
-BRLT Ar         if(N⊕V=1) PC ← PC + Ar  -  
-BRGE Ar         if(N⊕V=0) PC ← PC + Ar  -  
-BRO Ar          if(V=1) PC ← PC + Ar    -  
-BRNO Ar         if(V=0) PC ← PC + Ar    -  
-BRN Ar          if(N=1) PC ← PC + Ar    -  
-BRNN Ar         if(N=0) PC ← PC + Ar    -  
-BRLO Ar         if(C=1) PC ← PC + Ar    -
-BRSH Ar         if(C=0) PC ← PC + Ar    -
+RJMP Ar         PC ← PC + Ar            -               2
+BREQ Ar         if(Z=1) PC ← PC + Ar    -               2
+BRNE Ar         if(Z=0) PC ← PC + Ar    -               2
+BRLT Ar         if(N⊕V=1) PC ← PC + Ar  -               2
+BRGE Ar         if(N⊕V=0) PC ← PC + Ar  -               2
+BRO Ar          if(V=1) PC ← PC + Ar    -               2
+BRNO Ar         if(V=0) PC ← PC + Ar    -               2
+BRN Ar          if(N=1) PC ← PC + Ar    -               2
+BRNN Ar         if(N=0) PC ← PC + Ar    -               2
+BRC Ar          if(C=1) PC ← PC + Ar    -               2
+BRNC Ar         if(C=0) PC ← PC + Ar    -               2
 ##Load/Storage##
-LD Rx ERy       Rx ← (ERy)
-LDI Rx ERy      Rx ← (ERy); ERy ← ERy+1 -
-LDD Rx ERy      Rx ← (ERy); ERy ← ERy-1 -
-ST Rx ERy       (ERy) ← Rx
-STI Rx ERy      (ERy) ← Rx; ERy ← ERy+1 -
-STD Rx ERy      (ERy) ← Rx; ERy ← ERy-1 -
+LD Rx ERy       Rx ← (ERy)              -               3
+LDI Rx ERy      Rx ← (ERy); ERy ← ERy+1 -               3
+LDD Rx ERy      Rx ← (ERy); ERy ← ERy-1 -               3
+ST Rx ERy       (ERy) ← Rx              -               3
+STI Rx ERy      (ERy) ← Rx; ERy ← ERy+1 -               3
+STD Rx ERy      (ERy) ← Rx; ERy ← ERy-1 -               3
+##Stack Command
+POP Rx          Rx ← (SP); SP ← SP - 1  -               3
+PUSH Rx         (SP) ← Rx; SP ← SP + 1  -               3
+CALL A
+RET A
 ##Other commands##
 HLT             H ← 1                   H 
 NOP             nothing

@@ -18,8 +18,8 @@ begin
         math_operator[2:0] = first_byte[7:5];
         operator_group = GROUP_MATH_EREG;
     end else if (first_byte[5:0] == 6'b011111) begin //SINGLE REG GROUP
+        single_operator[1:0] = first_byte[7:6];
         operator_group = GROUP_SINGLE_REG;
-        //todo
     end else if (first_byte[6:0] == 7'b0111111) begin //REG MEMORY GROUP
         operator_group = GROUP_REG_MEMORY;
         reg_memory_operator[0] = first_byte[7];
@@ -68,6 +68,11 @@ begin
             mem_ereg_num = second_byte[7:6];
             cycle = 4;
         end
+        GROUP_SINGLE_REG: begin
+            single_operator[3:2] = second_byte[1:0];
+            reg_num = second_byte[5:2];
+            single_compute(rg[reg_num]);
+        end
         GROUP_OTHERS: begin
             other_operator = second_byte[4:0];
             case(other_operator)
@@ -92,6 +97,18 @@ begin
                 r = 1'b1;
             end else
                 date_bus = rg[reg_num];
+        end
+        GROUP_SINGLE_REG: begin
+            
+            if (single_operator == OP_POP) begin
+                adress_bus = sp - 1;
+                date_bus = 8'bz;
+                r = 1'b1;
+            end
+            if (single_operator == OP_PUSH) begin
+                adress_bus = sp;
+                date_bus = rg[reg_num];
+            end
         end
     endcase
 end endtask
@@ -118,6 +135,21 @@ begin
                 2'b01: {rg[ereg_reg_num+1], rg[ereg_reg_num]} = erg[mem_ereg_num] + 16'b1;
                 2'b10: {rg[ereg_reg_num+1], rg[ereg_reg_num]} = erg[mem_ereg_num] - 16'b1;
             endcase
+            cycle = 0;
+        end
+        GROUP_SINGLE_REG: begin
+            w = 1'b0;
+            if (single_operator == OP_POP) begin
+                rg[reg_num] = date_bus;
+                w = 1'b0;
+                r = 1'b0;
+                sp = sp - 1;
+            end
+            if (single_operator == OP_PUSH) begin
+                w = 1'b1;
+                r = 1'b0;
+                sp = sp + 1;
+            end
             cycle = 0;
         end
     endcase

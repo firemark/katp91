@@ -11,6 +11,7 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
 	byte rg[0:15]; //8bit registers
     shortint erg[0:3]; //16bit extended registers
 	shortint pc; //programer counter
+	shortint sp; //stack pointer
 	bit [3:0] cycle;
 	bit carry;
 	bit zero;
@@ -31,6 +32,7 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
 	Other_operator other_operator;
 	Branch_operator branch_operator;
 	Reg_memory_operator reg_memory_operator;
+	Single_operator single_operator;
 	Operator_group operator_group;
 
 	`include "cpu_computes.v"
@@ -40,6 +42,7 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
 		halt = 0;
 		cycle = 0;
 		pc = 16'h2000;
+		sp = 16'h1f00;
 	end
 	
 	always @(reset) begin
@@ -47,16 +50,17 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
 			halt = 0;
 			cycle = 0;
 			pc = 16'h2000;
+			sp = 16'h1f00;
 		end
 	end
 	
 	always @(posedge clk or negedge clk, negedge reset) begin
 		if (~halt) case(cycle)
 			0: begin
-				$display("PC %h ADDR %h DATA %h HALT %b", 
-					pc, adress_bus, date_bus, halt);
-				$display("ZERO %b CARRY %b OVERFLOW %b NEGATIVE %b",
-					zero, carry, overflow, negative);
+				$display("PC %h ADDR %h DATA %h SP %h", 
+					pc, adress_bus, date_bus, sp);
+				$display("ZERO %b CARRY %b OVERFLOW %b NEGATIVE %b HALT %b",
+					zero, carry, overflow, negative, halt);
 				for(i=0; i < 8; i=i+1) begin
 					$display("R%h = %h (%d) R%h = %h (%d)", 
 						i<<1, rg[i<<1], rg[i<<1],
