@@ -51,6 +51,8 @@ extended_opcodes = {
     'CALL': 0b0001,
 }
 
+branch_opcodes.update(extended_opcodes)
+
 reg_memory_opcodes = {
     'LD': 0b000,
     'LDI': 0b001,
@@ -80,7 +82,6 @@ raw_asm_formats = [
     ('REG_MEMORY', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])\s+ER(?P<y>\d+)$'),
     ('SIMPLE_REG', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])$'),
     ('BRANCH', r'^(?P<op>\w+)\s+(?P<label>\w+)$'),
-    ('EXTENDED', r'^(?P<op>\w+)\s+(?P<label>\.\w+)$'),
     ('OTHER', r'^(?P<op>\w+)$'),
     ('NOTHING', r'^$'),
 ]
@@ -153,6 +154,15 @@ class LineParser(object):
         self.group = group_name
         self.data = match.groupdict()
 
+    def get_bytes_from_group(self):
+        group = self.group
+        op = self.data.get('op')
+        if op is not None and group == 'BRANCH':
+            opcode = self.get_opcode(op, extended_opcodes, raise_error=False)
+            if opcode is not None:
+                group = 'EXTENDED'
+        return asm_format_lengths.get(group, 0)
+
     def to_bytecode(self):
         method = getattr(self, 'group_%s' % self.group.lower(), None)
         if method is None:
@@ -174,6 +184,9 @@ class LineParser(object):
         ]  
 
     def group_branch(self, op, label):
+        byte_list = self.group_extended(op, label)
+        if byte_list is not None:
+            return byte_list
         opcode = self.get_opcode(op, branch_opcodes)
         val = self.labels.get(label.upper())
         if val is None:
@@ -225,7 +238,9 @@ class LineParser(object):
         ]
 
     def group_extended(self, op, label):
-        opcode = self.get_opcode(op, extended_opcodes)
+        opcode = self.get_opcode(op, extended_opcodes, raise_error=False)
+        if opcode is None:
+            return None
         val = self.labels.get(label.upper())
         if val is None:
             self.raise_error('Label %s is unknown' % label)
@@ -259,10 +274,10 @@ class LineParser(object):
         else:
             return bval & mask  
 
-    def get_opcode(self, op, opcodes):
+    def get_opcode(self, op, opcodes, raise_error=True):
         op = op.upper()
         opcode = opcodes.get(op)
-        if opcode is None:
+        if opcode is None and raise_error:
             self.raise_error(
                 'operator {} is unknown - available operators are {}'.format(
                     op, ', '.join(opcodes)
@@ -273,16 +288,19 @@ class LineParser(object):
 
 def parse_to_bytecode(data):
     errs = []
+    striped_lines = (
+        line.partition(';')[0].strip() for line in data.split('\n')
+    )
     lines = [
         LineParser(line, num)
         for num, line in 
-        enumerate(line.partition(';')[0].strip() for line in data.split('\n'))
+        enumerate(striped_lines)
     ]
     addr = 0x2000
     for line_parser in lines:
         line_parser.safe_set_group_and_label(errs)
         line_parser.addr = addr
-        addr += asm_format_lengths.get(line_parser.group, 0)
+        addr += line_parser.get_bytes_from_group()
     labels = {
         line_parser.label: line_parser.addr 
         for line_parser in lines
