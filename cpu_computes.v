@@ -145,3 +145,19 @@ begin
     cycle = 0;
 end
 endtask;
+
+task others_compute;
+begin
+    case(other_operator)
+        OP_HLT: begin halt = 1; $finish; end
+        OP_CLC: carry = 1'b0;
+        OP_CLZ: zero = 1'b0;
+        OP_CLO: overflow = 1'b0;
+        OP_CLN: negative = 1'b0;
+        OP_STC: carry = 1'b1;
+        OP_STZ: zero = 1'b1;
+        OP_STO: overflow = 1'b1;
+        OP_STN: negative = 1'b1;
+    endcase
+    cycle = other_operator != OP_RET? 0 : 4;
+end endtask

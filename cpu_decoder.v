@@ -76,13 +76,7 @@ begin
         GROUP_OTHERS: begin
             other_operator = second_byte[4:0];
             $display("%s %s", operator_group.name(), other_operator.name());
-            case(other_operator)
-                OP_HLT: begin halt = 1; $finish; end
-            endcase
-            if (other_operator != OP_RET)
-                cycle = 0;
-            else
-                cycle = 4;
+            others_compute();
         end
         default: begin
             $display("%s", operator_group.name());

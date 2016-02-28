@@ -17,9 +17,17 @@ math_opcodes = {
 }
 
 other_opcodes = {
-    'HLT': 0b1111,
-    'RET': 0b1110,
+    'CLC': 0b0000,
+    'CLZ': 0b0001,
+    'CLO': 0b0010,
+    'CLN': 0b0011,
+    'STC': 0b1000,
+    'STZ': 0b1001,
+    'STO': 0b1010,
+    'STN': 0b1011,
     'NOP': 0b1100,
+    'RET': 0b1110,
+    'HLT': 0b1111,
 }
 
 branch_opcodes = {
