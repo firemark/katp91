@@ -26,7 +26,7 @@ int main(int argc, char **argv, char **env) {
     Verilated::commandArgs(argc, argv);
     Vcpu* cpu = new Vcpu;
     int reset = 1;
-    int last_cycle = 0;
+    int cycles = 0;
     while (!Verilated::gotFinish()) { 
         cpu->clk = ~cpu->clk;
         cpu->reset = reset;
@@ -35,14 +35,17 @@ int main(int argc, char **argv, char **env) {
         else if (cpu->w)
             ram[cpu->adress_bus] = cpu->date_bus;
         cpu->eval();
-        main_time++;
+        if (cpu->clk)
+            main_time++;
+        cycles++;
         if (!cpu->halt && cpu->v__DOT__cycle == 0) {
             printf("#TIME %d\n", main_time);
-            usleep(1000 * last_cycle * sleep_time);
+            usleep(1000 * cycles * sleep_time);
+            cycles = 0;
             system("clear");
         }
-        last_cycle = cpu->v__DOT__cycle;
     }
+    printf("#TIME %d\n", main_time);
     cpu->final();
     delete cpu;
     exit(0);

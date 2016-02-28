@@ -98,12 +98,12 @@ LDD Rx ERy      Rx ← (ERy); ERy ← ERy-1 -               3
 ST Rx ERy       (ERy) ← Rx              -               3
 STI Rx ERy      (ERy) ← Rx; ERy ← ERy+1 -               3
 STD Rx ERy      (ERy) ← Rx; ERy ← ERy-1 -               3
-##Stack Command
+##Stack Command##
 POP Rx          Rx ← (SP); SP ← SP - 1  -               3
 PUSH Rx         (SP) ← Rx; SP ← SP + 1  -               3
-CALL A          PUSH PC; JMP A
-RET             POP PC;
+CALL A          PUSH PC; JMP A          -               6
+RET             POP PC                  -               3
 ##Other commands##
-HLT             H ← 1                   H 
-NOP             nothing
+HLT             H ← 1                   H               2
+NOP             nothing                 -               2
 ```

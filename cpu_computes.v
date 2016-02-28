@@ -112,7 +112,8 @@ begin
         OP_RLC: {carry, rg[reg_num]} = {value, carry};
         OP_RRC: {rg[reg_num], carry} = {carry, value};
     endcase
-    if (single_operator != OP_POP && single_operator != OP_PUSH) begin
+    if (single_operator != OP_POP
+            && single_operator != OP_PUSH) begin
         overflow = old_sign ^ rg[reg_num][7];
         zero = &rg[reg_num];
         negative = rg[reg_num][7];
@@ -127,6 +128,7 @@ task single_compute16;
     bit old_sign;
 begin
     $display("%s %s", operator_group.name(), single_operator.name());
+    old_sign = rg[reg_num+1][15];
     case (single_operator)
         OP_NEG: {rg[reg_num+1], rg[reg_num]} = 16'b0 - value;
         OP_COM: {rg[reg_num+1], rg[reg_num]} = 16'hFFFF - value;

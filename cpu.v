@@ -33,6 +33,7 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
 	Branch_operator branch_operator;
 	Reg_memory_operator reg_memory_operator;
 	Single_operator single_operator;
+	Extended_operator extended_operator;
 	Operator_group operator_group;
 
 	`include "cpu_computes.v"
@@ -42,7 +43,7 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
 		halt = 0;
 		cycle = 0;
 		pc = 16'h2000;
-		sp = 16'h1f00;
+		sp = 16'h1c00;
 	end
 	
 	always @(reset) begin
@@ -99,6 +100,12 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
 			end
 			5: begin
 				second_extend_action();
+			end
+			6: begin
+				third_extend_action();
+			end
+			7: begin
+				fourth_extend_action();
 			end
 			default: cycle = 0;
 		endcase

@@ -18,6 +18,7 @@ math_opcodes = {
 
 other_opcodes = {
     'HLT': 0b1111,
+    'RET': 0b1110,
     'NOP': 0b1100,
 }
 
@@ -35,6 +36,11 @@ branch_opcodes = {
     'BRLO': 0b1010,
     'BRSH': 0b1011,
     'RJMP': 0b1100,
+}
+
+extended_opcodes = {
+    'JMP': 0b0000,
+    'CALL': 0b0001,
 }
 
 reg_memory_opcodes = {
@@ -66,6 +72,7 @@ raw_asm_formats = [
     ('REG_MEMORY', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])\s+ER(?P<y>\d+)$'),
     ('SIMPLE_REG', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])$'),
     ('BRANCH', r'^(?P<op>\w+)\s+(?P<label>\w+)$'),
+    ('EXTENDED', r'^(?P<op>\w+)\s+(?P<label>\.\w+)$'),
     ('OTHER', r'^(?P<op>\w+)$'),
     ('NOTHING', r'^$'),
 ]
@@ -79,9 +86,10 @@ asm_format_lengths = {
     'MATH_CONST': 2,
     'MATH_REG': 2,
     'MATH_EREG': 2,
+    'SIMPLE_REG': 2,
     'REG_MEMORY': 2,
     'BRANCH': 2,
-    'SPECIAL': 4,
+    'EXTENDED': 4,
     'OTHER': 2,
     'NOTHING': 0,
 }
@@ -208,6 +216,18 @@ class LineParser(object):
             (opcode >> 2) + (ix << 2),
         ]
 
+    def group_extended(self, op, label):
+        opcode = self.get_opcode(op, extended_opcodes)
+        val = self.labels.get(label.upper())
+        if val is None:
+            self.raise_error('Label %s is unknown' % label)
+        return [
+            0b1111111,
+            opcode,
+            val & 0xFF,
+            (val >> 8) & 0xFF,
+        ]
+
     def group_other(self, op):
         opcode = self.get_opcode(op, other_opcodes)
         return [0b11111111, opcode]
@@ -217,7 +237,7 @@ class LineParser(object):
 
     @staticmethod
     def val_to_u2(val, bit_size=8):
-        mask = 2**bit_size - 1
+        mask = 2 ** bit_size - 1
 
         if isinstance(val, int):
             bval = val

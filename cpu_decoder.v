@@ -23,15 +23,10 @@ begin
     end else if (first_byte[6:0] == 7'b0111111) begin //REG MEMORY GROUP
         operator_group = GROUP_REG_MEMORY;
         reg_memory_operator[0] = first_byte[7];
-    end else if (first_byte[7:0] == 8'b0111111) begin //EXTENDED GROUP
+    end else if (first_byte[7:0] == 8'b01111111) begin //EXTENDED GROUP
         operator_group = GROUP_EXTENDED;
-        //todo
-    end else if (first_byte[7:0] == 8'b1111111) begin //OTHERS GROUP
+    end else if (first_byte[7:0] == 8'b11111111) begin //OTHERS GROUP
         operator_group = GROUP_OTHERS;
-        //todo
-    end else if (first_byte[4:0] == 5'b11111) begin //OTHERS
-        operator_group = GROUP_OTHERS;
-        other_operator = first_byte[7:5];
     end else begin
         operator_group = GROUP_WRONG;
     end
@@ -73,12 +68,21 @@ begin
             reg_num = second_byte[5:2];
             single_compute(rg[reg_num]);
         end
+        GROUP_EXTENDED: begin
+            extended_operator = second_byte[4:0];
+            $display("%s %s", operator_group.name(), extended_operator.name());
+            cycle = 4;
+        end
         GROUP_OTHERS: begin
             other_operator = second_byte[4:0];
+            $display("%s %s", operator_group.name(), other_operator.name());
             case(other_operator)
                 OP_HLT: begin halt = 1; $finish; end
             endcase
-            cycle = 0;
+            if (other_operator != OP_RET)
+                cycle = 0;
+            else
+                cycle = 4;
         end
         default: begin
             $display("%s", operator_group.name());
@@ -98,8 +102,7 @@ begin
             end else
                 date_bus = rg[reg_num];
         end
-        GROUP_SINGLE_REG: begin
-            
+        GROUP_SINGLE_REG: begin  
             if (single_operator == OP_POP) begin
                 adress_bus = sp - 1;
                 date_bus = 8'bz;
@@ -108,6 +111,25 @@ begin
             if (single_operator == OP_PUSH) begin
                 adress_bus = sp;
                 date_bus = rg[reg_num];
+            end
+        end
+        GROUP_OTHERS: begin
+            if (other_operator == OP_RET) begin
+                adress_bus = sp - 1;
+                date_bus = 8'bz;
+                r = 1'b1;
+            end
+        end
+        GROUP_EXTENDED: begin
+            if (extended_operator == OP_JMP) begin
+                adress_bus = pc;
+                date_bus = 8'bz;
+                r = 1'b1;
+                w = 1'b0;
+            end
+            else if (extended_operator == OP_CALL) begin
+                adress_bus = sp;
+                date_bus = pc[7:0];
             end
         end
     endcase
@@ -144,13 +166,84 @@ begin
                 w = 1'b0;
                 r = 1'b0;
                 sp = sp - 1;
+                cycle = 0;
             end
             if (single_operator == OP_PUSH) begin
                 w = 1'b1;
                 r = 1'b0;
                 sp = sp + 1;
+                cycle = 0;
             end
-            cycle = 0;
+        end
+        GROUP_OTHERS: begin
+            if (other_operator == OP_RET) begin
+                pc[15:8] = date_bus;
+                r = 1'b0;
+                cycle = 6;
+            end
+        end
+        GROUP_EXTENDED: begin
+            cycle = 6;
+            if (extended_operator == OP_JMP) begin
+                r = 1'b0;
+                pc[7:0] = date_bus;
+            end
+            else if (extended_operator == OP_CALL) begin
+                w = 1'b1;
+            end else 
+                cycle = 0;
+        end
+    endcase
+end endtask
+
+task third_extend_action;
+begin
+    case(operator_group)
+        GROUP_OTHERS: begin
+            if (other_operator == OP_RET) begin
+                adress_bus = adress_bus - 1;
+                date_bus = 8'bz;
+                r = 1'b1;
+                cycle = 7;
+            end
+        end
+        GROUP_EXTENDED: begin
+            adress_bus = adress_bus + 1;
+            cycle = 7;
+            if (extended_operator == OP_JMP) begin
+                date_bus = 8'bz;
+                r = 1'b1;
+            end
+            else if (extended_operator == OP_CALL) begin
+                date_bus = pc[15:8];
+            end
+        end
+    endcase
+end endtask
+
+task fourth_extend_action;
+begin
+    case(operator_group)
+        GROUP_OTHERS: begin
+            if (other_operator == OP_RET) begin
+                pc = {pc[15:8], date_bus} + 16'h2; //move to next order 
+                r = 1'b0;
+                sp = sp - 2;
+                cycle = 0;
+            end
+        end
+        GROUP_EXTENDED: begin
+            if (extended_operator == OP_JMP) begin
+                r = 1'b0;
+                pc[15:8] = date_bus;
+                cycle = 0;
+            end
+            if (extended_operator == OP_CALL) begin
+                w = 1'b1;
+                sp = sp + 2;
+                cycle = 4;
+                extended_operator = OP_JMP; //im too lazy to write more cycles lol
+            end
         end
     endcase
 end endtask
