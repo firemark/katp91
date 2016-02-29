@@ -89,41 +89,41 @@ task first_extend_action;
 begin
     case(operator_group)
         GROUP_REG_MEMORY: begin
-            adress_bus = erg[mem_ereg_num];
+            address_bus = erg[mem_ereg_num];
             if (reg_memory_operator[2] == 1'b0) begin
-                date_bus = 8'bz;
+                data_bus = 8'bz;
                 r = 1'b1;
             end else
-                date_bus = rg[reg_num];
+                data_bus = rg[reg_num];
         end
         GROUP_SINGLE_REG: begin  
             if (single_operator == OP_POP) begin
-                adress_bus = sp - 1;
-                date_bus = 8'bz;
+                address_bus = sp - 1;
+                data_bus = 8'bz;
                 r = 1'b1;
             end
             if (single_operator == OP_PUSH) begin
-                adress_bus = sp;
-                date_bus = rg[reg_num];
+                address_bus = sp;
+                data_bus = rg[reg_num];
             end
         end
         GROUP_OTHERS: begin
             if (other_operator == OP_RET) begin
-                adress_bus = sp - 1;
-                date_bus = 8'bz;
+                address_bus = sp - 1;
+                data_bus = 8'bz;
                 r = 1'b1;
             end
         end
         GROUP_EXTENDED: begin
             if (extended_operator == OP_JMP) begin
-                adress_bus = pc;
-                date_bus = 8'bz;
+                address_bus = pc;
+                data_bus = 8'bz;
                 r = 1'b1;
                 w = 1'b0;
             end
             else if (extended_operator == OP_CALL) begin
-                adress_bus = sp;
-                date_bus = pc[7:0];
+                address_bus = sp;
+                data_bus = pc[7:0];
             end
         end
     endcase
@@ -140,7 +140,7 @@ begin
                 operator_group.name(), reg_memory_operator.name(), 
                 reg_num, rg[reg_num], mem_ereg_num, erg[mem_ereg_num]);
             if (reg_memory_operator[2] == 1'b0) begin
-                rg[reg_num] = date_bus;
+                rg[reg_num] = data_bus;
                 w = 1'b0;
                 r = 1'b0;
             end else begin
@@ -156,7 +156,7 @@ begin
         GROUP_SINGLE_REG: begin
             w = 1'b0;
             if (single_operator == OP_POP) begin
-                rg[reg_num] = date_bus;
+                rg[reg_num] = data_bus;
                 w = 1'b0;
                 r = 1'b0;
                 sp = sp - 1;
@@ -171,7 +171,7 @@ begin
         end
         GROUP_OTHERS: begin
             if (other_operator == OP_RET) begin
-                pc[15:8] = date_bus;
+                pc[15:8] = data_bus;
                 r = 1'b0;
                 cycle = 6;
             end
@@ -180,7 +180,7 @@ begin
             cycle = 6;
             if (extended_operator == OP_JMP) begin
                 r = 1'b0;
-                pc[7:0] = date_bus;
+                pc[7:0] = data_bus;
             end
             else if (extended_operator == OP_CALL) begin
                 w = 1'b1;
@@ -195,21 +195,21 @@ begin
     case(operator_group)
         GROUP_OTHERS: begin
             if (other_operator == OP_RET) begin
-                adress_bus = adress_bus - 1;
-                date_bus = 8'bz;
+                address_bus = address_bus - 1;
+                data_bus = 8'bz;
                 r = 1'b1;
                 cycle = 7;
             end
         end
         GROUP_EXTENDED: begin
-            adress_bus = adress_bus + 1;
+            address_bus = address_bus + 1;
             cycle = 7;
             if (extended_operator == OP_JMP) begin
-                date_bus = 8'bz;
+                data_bus = 8'bz;
                 r = 1'b1;
             end
             else if (extended_operator == OP_CALL) begin
-                date_bus = pc[15:8];
+                data_bus = pc[15:8];
             end
         end
     endcase
@@ -220,7 +220,7 @@ begin
     case(operator_group)
         GROUP_OTHERS: begin
             if (other_operator == OP_RET) begin
-                pc = {pc[15:8], date_bus} + 16'h2; //move to next order 
+                pc = {pc[15:8], data_bus} + 16'h2; //move to next order 
                 r = 1'b0;
                 sp = sp - 2;
                 cycle = 0;
@@ -229,7 +229,7 @@ begin
         GROUP_EXTENDED: begin
             if (extended_operator == OP_JMP) begin
                 r = 1'b0;
-                pc[15:8] = date_bus;
+                pc[15:8] = data_bus;
                 cycle = 0;
             end
             if (extended_operator == OP_CALL) begin

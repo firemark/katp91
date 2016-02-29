@@ -1,6 +1,6 @@
 module byte_to_rgb(color, r, g, b);
     input byte color;
-    output reg[0:3] r, g, b;
+    output reg[3:0] r, g, b;
     always @(color) begin
         case(color)
 8'b00000000: {r, g, b} = 9'b010010001;

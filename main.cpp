@@ -31,9 +31,9 @@ int main(int argc, char **argv, char **env) {
         cpu->clk = ~cpu->clk;
         cpu->reset = reset;
         if (cpu->r)
-            cpu->date_bus = ram[cpu->adress_bus];
+            cpu->data_bus = ram[cpu->address_bus];
         else if (cpu->w)
-            ram[cpu->adress_bus] = cpu->date_bus;
+            ram[cpu->address_bus] = cpu->data_bus;
         cpu->eval();
         if (cpu->clk)
             main_time++;

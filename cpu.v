@@ -1,10 +1,10 @@
 `include "cpu_data.v"
 
-module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
+module cpu(clk, reset, data_bus, address_bus, r, w, halt);
 	input reg clk /*verilator clocker*/;
 	input reg reset;
-	inout reg [7:0] date_bus;
-	output reg [15:0] adress_bus;
+	inout reg [7:0] data_bus;
+	output reg [15:0] address_bus;
 	output reg r, w;
 	output reg halt;
 	
@@ -59,7 +59,7 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
 		if (~halt) case(cycle)
 			0: begin
 				$display("PC %h ADDR %h DATA %h SP %h", 
-					pc, adress_bus, date_bus, sp);
+					pc, address_bus, data_bus, sp);
 				$display("ZERO %b CARRY %b OVERFLOW %b NEGATIVE %b HALT %b",
 					zero, carry, overflow, negative, halt);
 				for(i=0; i < 8; i=i+1) begin
@@ -71,28 +71,28 @@ module cpu(clk, reset, date_bus, adress_bus, r, w, halt);
                     $display("ER%h = %h (%d)", i, erg[i], erg[i]);
                 end
 
-				adress_bus = pc;
+				address_bus = pc;
 				pc = pc + 16'b1;
-				date_bus = 8'bz;
+				data_bus = 8'bz;
 				r = 1'b1;
 				w = 1'b0;
 				cycle = 1;
 			end
 			1: begin
 				r = 1'b0;
-				check_first_byte(date_bus);
+				check_first_byte(data_bus);
 				cycle = 2;
 			end
 			2: begin
-				adress_bus = pc;
+				address_bus = pc;
 				pc = pc + 16'b1;
-				date_bus = 8'bz;
+				data_bus = 8'bz;
 				r = 1'b1;
 				cycle = 3;
 			end
 			3: begin
 				r = 1'b0;
-				check_second_byte(date_bus);
+				check_second_byte(data_bus);
 			end
 			4: begin
 				first_extend_action();
