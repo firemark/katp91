@@ -1,12 +1,9 @@
-`define RAM_BUS_SIZE 14
-`define RAM_SIZE (2 << RAM_BUS_SIZE)
-
 module ram(date_bus, adress_bus, r, w);
     inout byte date_bus;
-    inout bit[RAM_BUS_SIZE:0] adress_bus;
+    inout bit[12:0] adress_bus;
     input bit r, w;
 
-    byte memory[0:RAM_SIZE];
+    byte memory[0:8192];
 
     always @(r or w) begin
         if (r) begin
