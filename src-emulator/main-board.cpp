@@ -56,7 +56,13 @@ int render(sf::RenderWindow &window, VBoard *board) {
     while (window.pollEvent(event)) {
         if (event.type == sf::Event::Closed)
             window.close();
+        if (event.type == sf::Event::Resized) {
+            window.setView(sf::View(sf::FloatRect(0, 0, event.size.width, event.size.height)));
+        }
     }
+
+    if (board->clk == 0)
+        return -1;
 
     int r = board->r * 28;
     int g = board->g * 28;
@@ -76,7 +82,7 @@ int render(sf::RenderWindow &window, VBoard *board) {
 
     if (screen_row == 0) {
         window.clear();
-        texture.update(background);
+        texture.loadFromImage(background);
         sprite.setTexture(texture);
         window.draw(sprite);
         window.display();      
@@ -88,7 +94,7 @@ int render(sf::RenderWindow &window, VBoard *board) {
 int main(int argc, char **argv, char **env) {
     init(argc, argv);
     VBoard* board = new VBoard;
-    sf::RenderWindow window(sf::VideoMode(800, 600, 32), "KATPY91");
+    sf::RenderWindow window(sf::VideoMode(1024, 625, 32), "KATPY91");
 
     while (window.isOpen() && !Verilated::gotFinish()) { 
         clock_and_eval(board);
