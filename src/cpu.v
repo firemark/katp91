@@ -58,18 +58,18 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
 	always @(posedge clk or negedge clk, negedge reset) begin
 		if (~halt) case(cycle)
 			0: begin
-				$display("PC %h ADDR %h DATA %h SP %h", 
-					pc, address_bus, data_bus, sp);
-				$display("ZERO %b CARRY %b OVERFLOW %b NEGATIVE %b HALT %b",
-					zero, carry, overflow, negative, halt);
-				for(i=0; i < 8; i=i+1) begin
-					$display("R%h = %h (%d) R%h = %h (%d)", 
-						i<<1, rg[i<<1], rg[i<<1],
-						(i<<1)+1'b1, rg[(i<<1)+1'b1], rg[(i<<1)+1'b1]);
-				end
-                for(i=0; i < 4; i=i+1) begin
-                    $display("ER%h = %h (%d)", i, erg[i], erg[i]);
-                end
+				//$display("PC %h ADDR %h DATA %h SP %h", 
+				//	pc, address_bus, data_bus, sp);
+				//$display("ZERO %b CARRY %b OVERFLOW %b NEGATIVE %b HALT %b",
+				//	zero, carry, overflow, negative, halt);
+				//for(i=0; i < 8; i=i+1) begin
+				//	$display("R%h = %h (%d) R%h = %h (%d)", 
+				//		i<<1, rg[i<<1], rg[i<<1],
+				//		(i<<1)+1'b1, rg[(i<<1)+1'b1], rg[(i<<1)+1'b1]);
+				//end
+                //for(i=0; i < 4; i=i+1) begin
+                //    $display("ER%h = %h (%d)", i, erg[i], erg[i]);
+                //end
 
 				address_bus = pc;
 				pc = pc + 16'b1;

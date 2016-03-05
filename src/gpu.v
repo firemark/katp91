@@ -4,7 +4,7 @@
 `define HEIGHT 600
 
 module Gpu(clk, reset, data_bus, address_bus, w, r, hs, vs, color);
-    input reg clk;
+    input reg clk /* verilator clocker*/;
     input reg reset;
     input bit w, r;
     inout reg[7:0] data_bus;

@@ -4,7 +4,7 @@
 `include "ram.v"
 
 module Board(clk, reset, r, g, b, hs, vs, halt);
-    input reg clk /* verilator clocker*/;
+    input reg clk /*verilator clocker*/;
     input reg reset;
     output reg[3:0] r, g, b;
     output reg hs, vs;

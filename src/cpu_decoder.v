@@ -70,16 +70,16 @@ begin
         end
         GROUP_EXTENDED: begin
             extended_operator = second_byte[4:0];
-            $display("%s %s", operator_group.name(), extended_operator.name());
+            //$display("%s %s", operator_group.name(), extended_operator.name());
             cycle = 4;
         end
         GROUP_OTHERS: begin
             other_operator = second_byte[4:0];
-            $display("%s %s", operator_group.name(), other_operator.name());
+            //$display("%s %s", operator_group.name(), other_operator.name());
             others_compute();
         end
         default: begin
-            $display("%s", operator_group.name());
+            //$display("%s", operator_group.name());
             cycle = 0;
         end
     endcase
@@ -135,10 +135,10 @@ task second_extend_action;
 begin
     case(operator_group)
         GROUP_REG_MEMORY: begin
-            $display(
-                "%s %s R%h (%h) ER%d (%h)", 
-                operator_group.name(), reg_memory_operator.name(), 
-                reg_num, rg[reg_num], mem_ereg_num, erg[mem_ereg_num]);
+            //$display(
+            //    "%s %s R%h (%h) ER%d (%h)", 
+            //    operator_group.name(), reg_memory_operator.name(), 
+            //    reg_num, rg[reg_num], mem_ereg_num, erg[mem_ereg_num]);
             if (reg_memory_operator[2] == 1'b0) begin
                 rg[reg_num] = data_bus;
                 w = 1'b0;

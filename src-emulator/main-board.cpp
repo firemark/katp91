@@ -15,6 +15,7 @@ sf::Image background;
 sf::Sprite sprite;
 sf::Texture texture;
 
+struct timespec tstart={0,0}, tend={0,0};
 
 double sc_time_stamp() {
     return main_time;
@@ -32,7 +33,6 @@ void init(int argc, char **argv) {
     background.create(1024, 625, sf::Color::Black);
 }
 
-
 int clock_and_eval(VBoard* board) {
     board->clk = ~board->clk;
     board->eval();
@@ -40,8 +40,13 @@ int clock_and_eval(VBoard* board) {
 
 int board_sleep() {
     struct timespec tim;
+    unsigned int delay = tend.tv_nsec - tstart.tv_nsec;
+    //printf("%d\n", delay);
+    if (delay >= 55)
+        return -1;
     tim.tv_sec = 0;
-    tim.tv_nsec = 28;
+    tim.tv_nsec = 55 - delay;
+    
     nanosleep(&tim, NULL);
 }
 
@@ -52,15 +57,6 @@ int end_loop() {
 }
 
 int render(sf::RenderWindow &window, VBoard *board) {
-    sf::Event event;
-    while (window.pollEvent(event)) {
-        if (event.type == sf::Event::Closed)
-            window.close();
-        if (event.type == sf::Event::Resized) {
-            window.setView(sf::View(sf::FloatRect(0, 0, event.size.width, event.size.height)));
-        }
-    }
-
     if (board->clk == 0)
         return -1;
 
@@ -70,7 +66,7 @@ int render(sf::RenderWindow &window, VBoard *board) {
 
     background.setPixel(screen_row, screen_line, sf::Color(r, g, b, 255));
     screen_row++;
-    printf("####%d %d (%d,%d,%d)\n", screen_row, screen_line, r, g, b);
+    //printf("####%d %d (%d,%d,%d)\n", screen_row, screen_line, r, g, b);
     if (screen_row >= 1024){
         screen_row = 0;
         screen_line++;
@@ -80,14 +76,22 @@ int render(sf::RenderWindow &window, VBoard *board) {
         screen_line = 0;
     }
 
-    if (screen_row == 0) {
-        window.clear();
-        texture.loadFromImage(background);
-        sprite.setTexture(texture);
-        window.draw(sprite);
-        window.display();      
-    }
+    if (screen_line != 0)
+        return -1;
 
+    sf::Event event;
+    while (window.pollEvent(event)) {
+        if (event.type == sf::Event::Closed)
+            window.close();
+        if (event.type == sf::Event::Resized) {
+            window.setView(sf::View(sf::FloatRect(0, 0, event.size.width, event.size.height)));
+        }
+    }
+    window.clear();
+    texture.loadFromImage(background);
+    sprite.setTexture(texture);
+    window.draw(sprite);
+    window.display();      
     
 }
 
@@ -97,8 +101,10 @@ int main(int argc, char **argv, char **env) {
     sf::RenderWindow window(sf::VideoMode(1024, 625, 32), "KATPY91");
 
     while (window.isOpen() && !Verilated::gotFinish()) { 
+        clock_gettime(CLOCK_MONOTONIC, &tstart);
         clock_and_eval(board);
         render(window, board);
+        clock_gettime(CLOCK_MONOTONIC, &tend);
         end_loop();
     }
     board->final();

@@ -9,11 +9,19 @@ simple computer written in Verilog to FPGA
 scripts/verilator-cpu.sh  # required verilator
 cp obj_dir/Vcpu . 
 ```
+
 ### Compile asm to bytecode and run
 
 ```bash
 scripts/asm.py asm.code > asm.hex  # required python3
 ./Vcpu asm.hex 
+```
+
+### Compile board simulator
+
+```bash
+scripts/verilator-board.sh  # required verilator
+cp obj_dir/VBoard . 
 ```
 
 ## ASM

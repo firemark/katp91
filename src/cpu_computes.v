@@ -5,9 +5,9 @@ task compute;
     bit old_sign;
     byte temp;
 begin
-    $display("%s %s R%h VAL %h (%d)", 
-        operator_group.name(), math_operator.name(), 
-        reg_num, value, value);
+    //$display("%s %s R%h VAL %h (%d)", 
+    //    operator_group.name(), math_operator.name(), 
+    //    reg_num, value, value);
     old_sign = rg[reg_num][7];
     case(math_operator)
         OP_ADD: 
@@ -44,9 +44,9 @@ task compute16;
     shortint temp;
     assign ereg_num = reg_num[2:1];
 begin
-    $display("%s %s ER%h VAL %h (%d)", 
-        operator_group.name(), math_operator.name(), 
-        ereg_num, value, value);
+    //$display("%s %s ER%h VAL %h (%d)", 
+    //    operator_group.name(), math_operator.name(), 
+    //    ereg_num, value, value);
     old_sign = erg[ereg_num][15];
     case(math_operator)
         OP_ADD:
@@ -78,7 +78,7 @@ end endtask
 
 function bit check_branch;
 begin
-    $display("%s %s", operator_group.name(), branch_operator.name());
+    //$display("%s %s", operator_group.name(), branch_operator.name());
     case (branch_operator)
         OP_BREQ: check_branch = zero;
         OP_BRNE: check_branch = ~zero;
@@ -100,7 +100,7 @@ task single_compute;
     input byte value;
     bit old_sign;
 begin
-    $display("%s %s", operator_group.name(), single_operator.name());
+    //$display("%s %s", operator_group.name(), single_operator.name());
     old_sign = rg[reg_num][7];
     case (single_operator)
         OP_NEG: rg[reg_num] = 8'b0 - value;
@@ -127,7 +127,7 @@ task single_compute16;
     input shortint value;
     bit old_sign;
 begin
-    $display("%s %s", operator_group.name(), single_operator.name());
+    //$display("%s %s", operator_group.name(), single_operator.name());
     old_sign = rg[reg_num+1][15];
     case (single_operator)
         OP_NEG: {rg[reg_num+1], rg[reg_num]} = 16'b0 - value;
