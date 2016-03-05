@@ -7,7 +7,7 @@ module Ram(data_bus, address_bus, r, w);
     input bit r, w;
     byte store[0:`RAM_SIZE] /* verilator public_flat */;
 
-    always @(r or w)
+    always @(posedge r or posedge w)
         if (w) begin
             store[address_bus] = data_bus;
         end else if (r)
