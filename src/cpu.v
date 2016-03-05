@@ -1,6 +1,6 @@
 `include "cpu_data.v"
 
-module cpu(clk, reset, data_bus, address_bus, r, w, halt);
+module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
 	input reg clk /*verilator clocker*/;
 	input reg reset;
 	inout reg [7:0] data_bus;
@@ -12,7 +12,7 @@ module cpu(clk, reset, data_bus, address_bus, r, w, halt);
     shortint erg[0:3]; //16bit extended registers
 	shortint pc; //programer counter
 	shortint sp; //stack pointer
-	bit [3:0] cycle;
+	bit [3:0] cycle  /*verilator public*/;
 	bit carry;
 	bit zero;
 	bit overflow;

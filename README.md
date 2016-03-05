@@ -6,7 +6,7 @@ simple computer written in Verilog to FPGA
 ### Compile emulator
 
 ```bash
-scripts/verilator.sh  # required verilator
+scripts/verilator-cpu.sh  # required verilator
 cp obj_dir/Vcpu . 
 ```
 ### Compile asm to bytecode and run

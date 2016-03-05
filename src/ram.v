@@ -1,21 +1,15 @@
-`define RAM_BUS_SIZE 14
-`define RAM_SIZE (2 << RAM_BUS_SIZE)
+`define RAM_BUS_SIZE 15
+`define RAM_SIZE ((2 << `RAM_BUS_SIZE - 1) - 1)
 
-module ram(date_bus, adress_bus, r, w);
-    inout byte date_bus;
-    inout bit[RAM_BUS_SIZE:0] adress_bus;
+module Ram(data_bus, address_bus, r, w);
+    inout reg[7:0] data_bus;
+    input bit[`RAM_BUS_SIZE - 1:0] address_bus;
     input bit r, w;
+    byte store[0:`RAM_SIZE] /* verilator public_flat */;
 
-    byte memory[RAM_SIZE:0];
-
-    always @(r or w) begin
-        if (r) begin
-            date_bus = memory[adress_bus];
-        end else if (w) begin
-            memory[adress_bus] = date_bus;
-            date_bus = 8'bz;
-        end
-
-    end
-
+    always @(r or w)
+        if (w) begin
+            store[address_bus] = data_bus;
+        end else if (r)
+            data_bus = store[address_bus];
 endmodule

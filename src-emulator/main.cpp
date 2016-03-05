@@ -1,4 +1,5 @@
 #include "Vcpu.h"
+#include "Vcpu_Cpu.h"
 #include "verilated.h"
 #include <unistd.h>
 #include <stdio.h>
@@ -38,7 +39,7 @@ int main(int argc, char **argv, char **env) {
         if (cpu->clk)
             main_time++;
         cycles++;
-        if (!cpu->halt && cpu->v__DOT__cycle == 0) {
+        if (!cpu->halt && cpu->v->cycle == 0) {
             printf("#TIME %d\n", main_time);
             usleep(1000 * cycles * sleep_time);
             cycles = 0;
