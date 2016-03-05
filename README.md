@@ -6,13 +6,13 @@ simple computer written in Verilog to FPGA
 ### Compile emulator
 
 ```bash
-./verilator.sh  # required verilator
+scripts/verilator.sh  # required verilator
 cp obj_dir/Vcpu . 
 ```
 ### Compile asm to bytecode and run
 
 ```bash
-./asm.py asm.code > asm.hex  # required python3
+scripts/asm.py asm.code > asm.hex  # required python3
 ./Vcpu asm.hex 
 ```
 
@@ -81,6 +81,7 @@ RRC (E)Rx       (E)Rx[n] ← (E)Rx[n+1]   C V N Z         2
                 C ← (E)Rx[0]
 ##Relative Jumps##
 RJMP Ar         PC ← PC + Ar            -               2
+JMP A           PC ← A                  -               4
 BREQ Ar         if(Z=1) PC ← PC + Ar    -               2
 BRNE Ar         if(Z=0) PC ← PC + Ar    -               2
 BRLT Ar         if(N⊕V=1) PC ← PC + Ar  -               2
