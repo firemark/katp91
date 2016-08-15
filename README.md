@@ -116,3 +116,70 @@ RET             POP PC                  -               3
 HLT             H ← 1                   H               2
 NOP             nothing                 -               2
 ```
+
+## GPU instructions
+
+to active gpu instructions - A[15:12] must be set as '1111'
+
+### Write mode
+
+#### Set pallette
+```
+Address: 1111XXXXYYYY
+Data: ZZZZZZZZ
+
+X - Index of palette
+Y - Index of color in palette
+Z - Value of color
+```
+
+#### Set helper value
+helper is a line in set/get sprite/palette
+or sprite index in set/get pixels
+```
+Address: 1110--------
+Data: -XXXXXXX
+
+X - helper line
+```
+
+#### Set sprite index
+```
+Address: 1101-XXXXXXX
+Data: ZZZZZZZZ
+
+X - row
+Z - index of sprite in (X, helper) cell
+```
+
+#### Set palette index
+```
+Address: 1100-XXXXXXX
+Data: ZZZZZZZZ
+
+X - row
+Z - index of palette in (X, helper) cell
+```
+
+#### Set two pixels in sprite
+index sprite is a helper
+```
+Address: 1011---XXXYY
+Data: ZZZZWWWW
+
+X - line
+Y - row (without first bit)
+Z - first pixel value 
+W - first pixel value 
+```
+
+#### Set one pixel in sprite
+index sprite is a helper
+```
+Address: 1010--XXXYYY
+Data: ----ZZZZ
+
+X - line
+Y - row
+Z - first pixel value 
+```

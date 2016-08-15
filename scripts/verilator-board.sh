@@ -7,7 +7,7 @@ verilator \
     --top-module Board\
     --stats\
     --noassert\
-    -O3\
+    -O1\
     -I$DIR/src\
     -CFLAGS "-O3 -m64"\
     -LDFLAGS "-lsfml-graphics -lsfml-window -lsfml-system -lrt"\

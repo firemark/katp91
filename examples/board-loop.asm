@@ -1,1 +1,12 @@
-complain: RJMP complain
+MOV R9 0xFF
+MOV R8 0x00
+MOV R0 0x07
+MOV R1 0x01
+MOV R2 0x10
+MOV R3 0xFF
+STI R0 ER0
+STI R1 ER0
+STI R2 ER0
+STI R3 ER0
+HLT
+complain:  JMP complain

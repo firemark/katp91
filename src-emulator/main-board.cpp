@@ -1,4 +1,6 @@
 #include "VBoard.h"
+#include "VBoard_Board.h"
+#include "VBoard_Ram.h"
 #include "verilated.h"
 #include <unistd.h>
 #include <stdio.h>
@@ -51,6 +53,7 @@ int board_sleep() {
 }
 
 int end_loop() {
+    printf("#END %d %d\n", main_time / 2, main_time % 2);
     main_time++;
     board_sleep();
     //system("clear");
@@ -98,6 +101,9 @@ int render(sf::RenderWindow &window, VBoard *board) {
 int main(int argc, char **argv, char **env) {
     init(argc, argv);
     VBoard* board = new VBoard;
+    board->reset = 1;
+    for(int i=0; i < RAM_SIZE; i++)
+        board->v->ram->store[i] = ram[i];
     sf::RenderWindow window(sf::VideoMode(1024, 625, 32), "KATPY91");
 
     while (window.isOpen() && !Verilated::gotFinish()) { 

@@ -147,6 +147,8 @@ begin
                 w = 1'b1;
                 r = 1'b0;
             end
+            $display("cpu! %h %h (%b)", address_bus, data_bus, w);
+            
             case (reg_memory_operator[1:0])
                 2'b01: {rg[ereg_reg_num+1], rg[ereg_reg_num]} = erg[mem_ereg_num] + 16'b1;
                 2'b10: {rg[ereg_reg_num+1], rg[ereg_reg_num]} = erg[mem_ereg_num] - 16'b1;

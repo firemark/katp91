@@ -12,37 +12,36 @@ module Board(clk, reset, r, g, b, hs, vs, halt);
 
     byte data_bus;
     shortint address_bus;
+    bit[11:0] small_address_bus;
+    bit[15:0] ram_address_bus;
     byte color;
-    bit cs_gpu, cs_gpu_w, cs_gpu_r;
-    bit cs_ram, cs_ram_w, cs_ram_r;
+    bit cs_gpu;
+    bit cs_ram;
     bit write, read;
 
     //assign chip select pins
     //gpu
-    assign cs_gpu = address_bus[15:11] == 4'b1111;
-    assign cs_gpu_w = cs_gpu & write;
-    assign cs_gpu_r = cs_gpu & read;
-    //ram
+    assign cs_gpu = address_bus[15:12] == 4'b1111;
     assign cs_ram = ~address_bus[15];
-    assign cs_ram_w = cs_ram & write;
-    assign cs_ram_r = cs_ram & read;
+    assign small_address_bus = address_bus[11:0];
+    assign ram_address_bus = address_bus[15:0];
 
-    Gpu gpu(
-        clk, reset,
-        data_bus, address_bus[8:0],
-        cs_gpu_w,
-        cs_gpu_r,
-        hs, vs, color);
-    Byte_to_rgb byte_to_rgb(color, r, g, b);
-    Ram ram(
-        data_bus, address_bus[14:0],
-        cs_ram_w,
-        cs_ram_r);
     Cpu cpu(
         clk, reset,
         data_bus,
         address_bus,
-        read, write,
+        write, read,
         halt);
+    Gpu gpu(
+        clk, reset,
+        data_bus, small_address_bus,
+        cs_gpu & write,
+        cs_gpu & read,
+        hs, vs, color); 
+    Byte_to_rgb byte_to_rgb(color, r, g, b);
+    Ram ram(
+        data_bus, ram_address_bus,
+        cs_ram & write,
+        cs_ram & read);
 
 endmodule
