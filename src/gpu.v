@@ -4,16 +4,19 @@
 `define HEIGHT 600
 
 module Gpu(clk, reset, data_bus, address_bus, w, r, hs, vs, color);
-    input reg clk /* verilator clocker*/;
-    input reg reset;
-    input bit w, r;
-    inout reg[7:0] data_bus;
-    output byte address_bus;
+    input clk /* verilator clocker*/;
+    input reset;
+    input w, r;
+    inout [7:0] data_bus;
+    input [7:0] address_bus;
     output reg hs, vs;
-    output byte color;
-
-    bit[9:0] row;
-    bit[9:0] line;
+    output reg[7:0] color;
+ 
+    reg [9:0] row;
+    reg [9:0] line;
+	 
+	 reg [7:0] data_bus_out;
+	 assign data_bus = r ? data_bus_out : 8'bz;
 
     initial begin
         row <= 0;

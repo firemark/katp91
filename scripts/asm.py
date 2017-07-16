@@ -122,6 +122,7 @@ def line_parse_safe(func):
     inner.__name__ = 'safe_%s' % inner.__name__
     return inner
 
+
 class LineParser(object):
     line = ''
     group = ''

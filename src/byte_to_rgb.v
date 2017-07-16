@@ -1,5 +1,5 @@
 module Byte_to_rgb(color, r, g, b);
-    input byte color;
+    input [7:0] color;
     output reg[2:0] r, g, b;
     always @(color) begin
         case(color)

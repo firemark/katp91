@@ -1,87 +1,81 @@
 `ifndef CPU_DATA
 `define CPU_DATA
 
-typedef enum bit [3:0] {
-    OP_ADD = 'b0000,
-    OP_ADC = 'b0001,
-    OP_SUB = 'b0010,
-    OP_SBC = 'b0011,
-    OP_AND = 'b0100,
-    OP_OR = 'b0110,
-    OP_XOR = 'b1000,
-    OP_MOV = 'b1010,
-    OP_CMP = 'b1100
-} Math_operator;
+// Math operators
+`define OP_ADD 4'b0000
+`define OP_ADC 4'b0001
+`define OP_SUB 4'b0010
+`define OP_SBC 4'b0011
+`define OP_AND 4'b0100
+`define OP_OR  4'b0110
+`define OP_XOR 4'b1000
+`define OP_MOV 4'b1010
+`define OP_CMP 4'b1100
 
-typedef enum bit [3:0] {
-    OP_BREQ = 'b0000, //equality
-    OP_BRNE = 'b0001, //not equality
-    OP_BRLT = 'b0010, //less than
-    OP_BRGE = 'b0011, //great and eq
-    OP_BRC = 'b00100, //carry
-    OP_BRO = 'b0101, //overflow
-    OP_BRN = 'b0110, //negative
-    OP_BRNC = 'b0111, //not carry
-    OP_BRNO = 'b1000, //not  overflow
-    OP_BRNN = 'b1001, //not negative
-    OP_BRLO = 'b1010, //lower 
-    OP_BRSH = 'b1011, //same and higher
-    OP_RJMP = 'b1100, //restricted jump
-    OP_RCALL = 'b1101 //restricted call
-} Branch_operator;
 
-typedef enum bit [3:0] {
-    OP_NEG = 'b0000,
-    OP_COM = 'b0001,
-    OP_LSL = 'b0010,
-    OP_LSR = 'b0011,
-    OP_ROL = 'b0100,
-    OP_ROR = 'b0101,
-    OP_RLC = 'b0110,
-    OP_RRC = 'b0111,
-    OP_PUSH = 'b1000,
-    OP_POP = 'b1001
-} Single_operator;
+// Branch operators
+`define OP_BREQ 4'b0000 //equality
+`define OP_BRNE 4'b0001 //not equality
+`define OP_BRLT 4'b0010 //less than
+`define OP_BRGE 4'b0011 //great and eq
+`define OP_BRC  4'b0100 //carry
+`define OP_BRO  4'b0101 //overflow
+`define OP_BRN  4'b0110 //negative
+`define OP_BRNC 4'b0111 //not carry/
+`define OP_BRNO 4'b1000 //not overflow
+`define OP_BRNN 4'b1001 //not negative
+`define OP_BRLO 4'b1010 //lower
+`define OP_BRSH 4'b1011 //same and higher
+`define OP_RJMP 4'b1100 //restricted jump
+`define OP_RCALL 4'b1101 //restricted call
 
-typedef enum bit [2:0] {
-    OP_LD = 'b000,
-    OP_LDI = 'b001,
-    OP_LDD = 'b010,
-    OP_ST = 'b100,
-    OP_STI = 'b101,
-    OP_STD = 'b110
-} Reg_memory_operator;
+// Single operators
+`define OP_NEG 4'b0000
+`define OP_COM 4'b0001
+`define OP_LSL 4'b0010
+`define OP_LSR 4'b0011
+`define OP_ROL 4'b0100
+`define OP_ROR 4'b0101
+`define OP_RLC 4'b0110
+`define OP_RRC 4'b0111
+`define OP_PUSH 4'b1000
+`define OP_POP 4'b1001
 
-typedef enum bit [3:0] {
-    OP_JMP = 'b0000,
-    OP_CALL = 'b0001
-} Extended_operator;
+//Reg memory operators
+`define OP_LD 3'b000
+`define OP_LDI 3'b001
+`define OP_LDD 3'b010
+`define OP_ST 3'b100
+`define OP_STI 3'b101
+`define OP_STD 3'b110
 
-typedef enum bit [3:0] {
-    OP_CLC = 'b0000,
-    OP_CLZ = 'b0001,
-    OP_CLO = 'b0010,
-    OP_CLN = 'b0011,
-    OP_STC = 'b1000,
-    OP_STZ = 'b1001,
-    OP_STO = 'b1010,
-    OP_STN = 'b1011,
-    OP_NOP = 'b1100,
-    OP_RET = 'b1110,
-    OP_HLT = 'b1111
-} Other_operator;
+//Extended operators
+`define OP_JMP 4'b0000
+`define OP_CALL 4'b0001
 
-typedef enum {
-    GROUP_MATH_CONSTANT,
-    GROUP_MATH_REG,
-    GROUP_MATH_EREG,
-    GROUP_BRANCH_JUMPS,
-    GROUP_SINGLE_REG,
-    GROUP_REG_MEMORY,
-    GROUP_SINGLE_EREG,
-    GROUP_EXTENDED,
-    GROUP_OTHERS,
-    GROUP_WRONG
-} Operator_group;
+//Other operators
+`define OP_CLC 4'b0000
+`define OP_CLZ 4'b0001
+`define OP_CLO 4'b0010
+`define OP_CLN 4'b0011
+`define OP_STC 4'b1000
+`define OP_STZ 4'b1001
+`define OP_STO 4'b1010
+`define OP_STN 4'b1011
+`define OP_NOP 4'b1100
+`define OP_RET 4'b1110
+`define OP_HLT 4'b1111
+
+//Operator groups
+`define GROUP_MATH_CONSTANT 0
+`define GROUP_MATH_REG 1
+`define GROUP_MATH_EREG 2
+`define GROUP_BRANCH_JUMPS 3
+`define GROUP_SINGLE_REG 4
+`define GROUP_REG_MEMORY 5
+`define GROUP_SINGLE_EREG 6
+`define GROUP_EXTENDED 7
+`define GROUP_OTHERS 8
+`define GROUP_WRONG 9
 
 `endif

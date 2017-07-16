@@ -4,20 +4,21 @@
 `include "ram.v"
 
 module Board(clk, reset, r, g, b, hs, vs, halt);
-    input reg clk /*verilator clocker*/;
-    input reg reset;
-    output reg[3:0] r, g, b;
-    output reg hs, vs;
-    output reg halt;
+    input clk /*verilator clocker*/;
+    input reset;
+    output [2:0] r, g, b;
+    output hs, vs;
+    output halt;
 
-    byte data_bus;
-    shortint address_bus;
-    byte color;
-    bit cs_gpu, cs_gpu_w, cs_gpu_r;
-    bit cs_ram, cs_ram_w, cs_ram_r;
-    bit write, read;
+    wire[7:0] data_bus;
+    wire[15:0] address_bus;
+    wire[7:0] color;
+    wire cs_gpu, cs_gpu_w, cs_gpu_r;
+    wire cs_ram, cs_ram_w, cs_ram_r;
+    wire write, read;
 
     //assign chip select pins
+
     //gpu
     assign cs_gpu = address_bus[15:11] == 4'b1111;
     assign cs_gpu_w = cs_gpu & write;

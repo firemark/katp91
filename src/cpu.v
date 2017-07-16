@@ -1,40 +1,44 @@
 `include "cpu_data.v"
 
 module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
-	input reg clk /*verilator clocker*/;
-	input reg reset;
-	inout reg [7:0] data_bus;
-	output reg [15:0] address_bus;
+	input clk /*verilator clocker*/;
+	input reset;
+	inout [7:0] data_bus;
+	output reg[15:0] address_bus;
 	output reg r, w;
 	output reg halt;
 	
-	byte rg[0:15]; //8bit registers
-    shortint erg[0:3]; //16bit extended registers
-	shortint pc; //programer counter
-	shortint sp; //stack pointer
-	bit [3:0] cycle  /*verilator public*/;
-	bit carry;
-	bit zero;
-	bit overflow;
-	bit negative;
+	reg [7:0] data_bus_out;
+	reg [7:0] data_bus_in;
+	assign data_bus = r? data_bus_out : 8'bz;
 	
-    assign erg[3] = {rg[15], rg[14]};
-    assign erg[2] = {rg[13], rg[12]};
-    assign erg[1] = {rg[11], rg[10]};
-    assign erg[0] = {rg[9], rg[8]};
+	reg[7:0] rg[0:15]; //8reg registers
+   wire[15:0] erg[0:3]; //16reg extended registers
+	reg[15:0] pc; //programer counter
+	reg[15:0] sp; //stack pointer
+	reg[3:0] cycle  /*verilator public*/;
+	reg carry;
+	reg zero;
+	reg overflow;
+	reg negative;
+	
+   assign erg[3] = {rg[15], rg[14]};
+   assign erg[2] = {rg[13], rg[12]};
+   assign erg[1] = {rg[11], rg[10]};
+   assign erg[0] = {rg[9], rg[8]};
 
-	bit [3:0] reg_num;
-	bit [1:0] mem_ereg_num;
-	bit [3:0] i;
-    bit [8:0] pc_branch_jump;
+	reg[3:0] reg_num;
+	reg[1:0] mem_ereg_num;
+	reg[3:0] i;
+   reg[8:0] pc_branch_jump;
 
-	Math_operator math_operator;
-	Other_operator other_operator;
-	Branch_operator branch_operator;
-	Reg_memory_operator reg_memory_operator;
-	Single_operator single_operator;
-	Extended_operator extended_operator;
-	Operator_group operator_group;
+	reg[3:0] math_operator;
+	reg[3:0] other_operator;
+	reg[4:0] branch_operator;
+	reg[3:0] reg_memory_operator;
+	reg[4:0] single_operator;
+	reg[4:0] extended_operator;
+	reg[7:0] operator_group;
 
 	`include "cpu_computes.v"
 	`include "cpu_decoder.v"
@@ -73,7 +77,6 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
 
 				address_bus = pc;
 				pc = pc + 16'b1;
-				data_bus = 8'bz;
 				r = 1'b1;
 				w = 1'b0;
 				cycle = 1;
@@ -86,12 +89,13 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
 			2: begin
 				address_bus = pc;
 				pc = pc + 16'b1;
-				data_bus = 8'bz;
 				r = 1'b1;
+				w = 1'b0;
 				cycle = 3;
 			end
 			3: begin
 				r = 1'b0;
+				w = 1'b0;
 				check_second_byte(data_bus);
 			end
 			4: begin
