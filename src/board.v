@@ -1,9 +1,9 @@
-`include "cpu.v"
-`include "gpu.v"
-`include "byte_to_rgb.v"
-`include "ram.v"
+//`include "cpu.v"
+//`include "gpu.v"
+//`include "byte_to_rgb.v"
+//`include "ram.v"
 
-module Board(clk, reset, r, g, b, hs, vs, halt);
+module board(clk, reset, r, g, b, hs, vs, halt);
     input clk /*verilator clocker*/;
     input reset;
     output [2:0] r, g, b;
@@ -36,7 +36,7 @@ module Board(clk, reset, r, g, b, hs, vs, halt);
         hs, vs, color);
     Byte_to_rgb byte_to_rgb(color, r, g, b);
     Ram ram(
-        data_bus, address_bus[14:0],
+        clk, data_bus, address_bus[13:0],
         cs_ram_w,
         cs_ram_r);
     Cpu cpu(
