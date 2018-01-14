@@ -14,9 +14,9 @@ module Gpu(clk, reset, data_bus, address_bus, w, r, hs, vs, color);
  
     reg [9:0] row;
     reg [9:0] line;
-	 
-	reg [7:0] data_bus_out;
-	assign data_bus = r ? data_bus_out : 8'bz;
+     
+    reg [7:0] data_bus_out;
+    assign data_bus = r ? data_bus_out : 8'bz;
 
     initial begin
         row <= 0;
@@ -39,29 +39,29 @@ module Gpu(clk, reset, data_bus, address_bus, w, r, hs, vs, color);
     end endtask
 
     always @(posedge clk, posedge reset) begin
-		  if (reset) begin
-		    row <= 0;
+          if (reset) begin
+            row <= 0;
             line <= 0;
-		  end else begin
-			  row <= row + 1;
-			  if (row == 800) begin
-					line <= line + 1;
-					row <= 0;
-			  end
-			  if (line < 10) begin
-					color <= `BLACK_COLOR;
-					vs <= 1'b0;
-			  end else if (line < 10 + 2) begin
-					color <= `BLACK_COLOR;
-					vs <= 1'b1;
-			  end else if (line < 10 + 2 + 33) begin
-					color <= `BLACK_COLOR;
-					vs <= 1'b0;
-			  end else if (line < 10 + 2 + 33 + `HEIGHT) begin
-					draw_line();
-			  end else begin
-					line <= 0;
-			  end 
-		  end
+          end else begin
+              row <= row + 1;
+              if (row == 800) begin
+                    line <= line + 1;
+                    row <= 0;
+              end
+              if (line < 10) begin
+                    color <= `BLACK_COLOR;
+                    vs <= 1'b0;
+              end else if (line < 10 + 2) begin
+                    color <= `BLACK_COLOR;
+                    vs <= 1'b1;
+              end else if (line < 10 + 2 + 33) begin
+                    color <= `BLACK_COLOR;
+                    vs <= 1'b0;
+              end else if (line < 10 + 2 + 33 + `HEIGHT) begin
+                    draw_line();
+              end else begin
+                    line <= 0;
+              end 
+          end
     end
 endmodule

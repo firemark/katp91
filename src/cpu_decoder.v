@@ -121,7 +121,7 @@ begin
             address_bus <= erg[mem_ereg_num];
             if (reg_memory_operator[2] == 1'b0) begin
                 r <= 1'b1;
-					 w <= 1'b0;
+                     w <= 1'b0;
             end else
                 data_bus_out <= rg[reg_num];
         end
@@ -129,7 +129,7 @@ begin
             if (single_operator == `OP_POP) begin
                 address_bus <= sp - 1;
                 r <= 1'b1;
-					 w <= 1'b0;
+                     w <= 1'b0;
             end
             if (single_operator == `OP_PUSH) begin
                 address_bus <= sp;
@@ -140,7 +140,7 @@ begin
             if (other_operator == `OP_RET) begin
                 address_bus <= sp - 1;
                 r <= 1'b1;
-					 w <= 1'b0;
+                     w <= 1'b0;
             end
         end
         `GROUP_EXTENDED: begin
@@ -153,18 +153,18 @@ begin
                 address_bus <= sp;
                 data_bus_out <= pc[7:0];
             end else
-					cycle <= 0;
+                    cycle <= 0;
         end
-		  default: begin
-		      cycle <= 0;
-		  end
+          default: begin
+              cycle <= 0;
+          end
     endcase
 end endtask
 
 task second_extend_action;
     reg [3:0] ereg_reg_num;
 begin
-	 ereg_reg_num = {1'b1, mem_ereg_num, 1'b0};
+     ereg_reg_num = {1'b1, mem_ereg_num, 1'b0};
     case(operator_group)
         `GROUP_REG_MEMORY: begin
             //$display(
@@ -182,28 +182,28 @@ begin
             case (reg_memory_operator[1:0])
                 2'b01: {rg[ereg_reg_num+1], rg[ereg_reg_num]} <= erg[mem_ereg_num] + 16'b1;
                 2'b10: {rg[ereg_reg_num+1], rg[ereg_reg_num]} <= erg[mem_ereg_num] - 16'b1;
-					 default: {rg[ereg_reg_num+1], rg[ereg_reg_num]} <= erg[mem_ereg_num];
+                     default: {rg[ereg_reg_num+1], rg[ereg_reg_num]} <= erg[mem_ereg_num];
             endcase
             cycle <= 0;
         end
         `GROUP_SINGLE_REG: begin
             w <= 1'b0;
-				case (single_operator)
-					`OP_POP: begin
-						 rg[reg_num] <= data_bus;
-						 w <= 1'b0;
-						 r <= 1'b0;
-						 sp <= sp - 1;
-						 cycle <= 0;
-					end
-					`OP_PUSH: begin
-						 w <= 1'b1;
-						 r <= 1'b0;
-						 sp <= sp + 1;
-						 cycle <= 0;
-					end
-					default: cycle <= 0;
-				endcase
+                case (single_operator)
+                    `OP_POP: begin
+                         rg[reg_num] <= data_bus;
+                         w <= 1'b0;
+                         r <= 1'b0;
+                         sp <= sp - 1;
+                         cycle <= 0;
+                    end
+                    `OP_PUSH: begin
+                         w <= 1'b1;
+                         r <= 1'b0;
+                         sp <= sp + 1;
+                         cycle <= 0;
+                    end
+                    default: cycle <= 0;
+                endcase
         end
         `GROUP_OTHERS: begin
             if (other_operator == `OP_RET) begin
@@ -211,22 +211,22 @@ begin
                 r <= 1'b0;
                 cycle <= 6;
             end else
-					 cycle <= 0;
+                     cycle <= 0;
         end
         `GROUP_EXTENDED: begin
             cycle <= 6;
-				case (extended_operator)
-			       `OP_JMP: begin
-						  r <= 1'b0;
-						  pc[7:0] <= data_bus;
-					 end
-					 `OP_CALL: begin
+                case (extended_operator)
+                   `OP_JMP: begin
+                          r <= 1'b0;
+                          pc[7:0] <= data_bus;
+                     end
+                     `OP_CALL: begin
                     w <= 1'b1;
-				    end
+                    end
                 default: cycle <= 0;
-			   endcase
+               endcase
         end
-		  default: cycle <= 0;
+          default: cycle <= 0;
     endcase
 end endtask
 
@@ -237,7 +237,7 @@ begin
             if (other_operator == `OP_RET) begin
                 address_bus <= address_bus - 1;
                 r <= 1'b1;
-					 w <= 1'b0;
+                     w <= 1'b0;
                 cycle <= 7;
             end else cycle <= 0;
         end
@@ -246,7 +246,7 @@ begin
             cycle <= 7;
             if (extended_operator == `OP_JMP) begin
                 r <= 1'b1;
-					 w <= 1'b0;
+                     w <= 1'b0;
             end
             else if (extended_operator == `OP_CALL) begin
                 data_bus_out <= pc[15:8];

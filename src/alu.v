@@ -35,7 +35,7 @@ module Alu(
                 `OP_CMP: {carry, result} <= {1'b0, value1} - {1'b0, value2};
                 `OP_MOV: result <= value2;
                 default: result <= 1'b0;
-			  endcase
+              endcase
        else if (compute_single_signal)
             case (operator)
                 `OP_NEG: result <= 16'b0 - value1;
