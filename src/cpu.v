@@ -11,126 +11,138 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
     reg [7:0] data_bus_out;
     assign data_bus = w? data_bus_out : 8'bz;
     
-    reg[7:0] rg[0:15]; //8reg registers
-    wire[15:0] erg[0:3]; //16reg extended registers
-    reg[15:0] pc; //programer counter
-    reg[15:0] sp; //stack pointer
-    reg[3:0] cycle  /*verilator public*/;
-    reg carry;
-    reg zero;
-    reg overflow;
-    reg negative;
+    reg [7:0] rg[0:15]; //8reg registers
+    reg [15:0] pc; //programer counter
+    reg [15:0] sp; //stack pointer
+    reg [2:0] cycle  /*verilator public*/;
     
+    reg [3:0] flags;
+    wire carry, overflow, zero, negative;
+    assign carry = flags[0];
+    assign overflow = flags[1];
+    assign zero = flags[2];
+    assign negative = flags[3];
+    
+    wire[15:0] erg[0:3]; //16reg extended registers
     assign erg[3] = {rg[15], rg[14]};
     assign erg[2] = {rg[13], rg[12]};
     assign erg[1] = {rg[11], rg[10]};
     assign erg[0] = {rg[9], rg[8]};
-
-    wire[3:0] pre_reg_num;
-    reg[3:0] reg_num;
-    reg[1:0] mem_ereg_num;
-    reg[3:0] i;
-
-    wire[8:0] pre_pc_branch_jump;
-    reg[8:0] pc_branch_jump;
-
-    wire[4:0] pre_operator;
-    reg[4:0] operator;
-    wire[3:0] math_operator;
-    wire[4:0] other_operator;
-    wire[4:0] branch_operator;
-    wire[3:0] reg_memory_operator;
-    wire[4:0] single_operator;
-    wire[4:0] extended_operator;
-    wire[4:0] operator_group;
     
-    assign math_operator = operator[3:0];
-    assign other_operator = operator;
-    assign branch_operator = operator;
-    assign reg_memory_operator = operator[3:0];
-    assign single_operator = operator;
-    assign extended_operator = operator;
+    wire reset_cycle_on_3;
+    reg reset_cycle_on_5;
+    reg reset_cycle_to_4;
+    wire reset_cycle; assign reset_cycle = (
+        reset_cycle_on_3 && (cycle == 3) ||
+        reset_cycle_on_5 && (cycle == 5)
+    );
+
+    reg [15:0] word;
+    reg decoder_latch;
+    wire [8:0] pc_branch_jump;
+    wire [3:0] operator;
+    wire [3:0] operator_group;
+    wire [3:0] rg1, rg2;
+    wire [1:0] erg1, erg2;
+    wire [7:0] val;
+    Decoder decoder(
+        decoder_latch, word, operator_group, operator, reset_cycle_on_3,
+        pc_branch_jump, rg1, rg2, val, erg1, erg2);
     
-    reg [15:0] alu_value1;
-    reg [15:0] alu_value2;
-    wire [15:0] alu_result;
-    reg alu_old_sign, compute_signal, compute_single_signal;
-    wire alu_carry, alu_overflow, alu_zero, alu_negative;
+    wire [3:0] alu8_flags;
+    wire [7:0] alu8_result;
+    Alu8 alu8(
+        cycle == 3 && (
+            operator_group == GROUP_MATH_CONSTANT ||
+            operator_group == GROUP_MATH_REG ||
+            operator_group == GROUP_SINGLE_REG),
+        operator_group == GROUP_SINGLE_REG,
+        rg[rg1],
+        operator_group == GROUP_MATH ? rg[rg2] : val,
+        operator, alu8_result, alu8_flags);
     
-    Alu alu(
-        operator, alu_value1, alu_value2,
-        alu_result, alu_old_sign,
-        alu_carry, alu_overflow, alu_zero, alu_negative,
-        compute_signal, compute_single_signal);
+    wire [3:0] alu16_flags;
+    wire [15:0] alu16_result;
+    Alu16 alu16(
+        cycle == 3 && operator_group == GROUP_MATH_EREG,
+        erg[erg1], erg[erg2], operator, alu16_result, alu16_flags);
         
-    reg first_byte_latch;
-    CpuDecodeFirstByte cpu_first_byte(
-        first_byte_latch, data_out, pre_operator,
-        operator_group, pre_reg_num, pre_pc_branch_jump);
+    wire [3:0] flager_flags;
+    SetFlager set_flager(cycle == 3 && operator_group == GROUP_OTHERS, flags, flager_flags);
+        
+    wire [3:0] erg1_rg1; assign erg1_rg1 = {1'b1, erg1, 1'b1}; 
+    wire [3:0] erg1_rg2; assign erg1_rg2 = {1'b1, erg1, 1'b0};
         
     wire check_branch;
-    CheckBranch checkBranch(
-        branch_operator, check_branch,
-        carry, overflow, zero, negative);
+    CheckBranch check_branch_doc(operator, check_branch, flags);
     
     initial begin
         halt = 0;
-        cycle <= 0;
-        first_byte_latch <= 0;
-        pc <= 16'h2000;
-        sp <= 16'h1c00;
+        cycle = 0;
+        pc = 16'h2000;
+        sp = 16'h1c00;
+        decoder_latch = 0;
+        reset_cycle_on_5 = 0;
+        reset_cycle_to_4 = 0;
     end
     
-    always @(posedge clk, posedge reset, posedge halt) begin
-        if (halt) begin
+    always @(posedge clk) begin
+        if (halt || reset_cycle || reset)
             cycle <= 0;
-        end else if (reset) begin
+        else if (reset_cycle_to_4)
+            cycle <= 4;
+        else
+            cycle <= cycle + 1;
+        
+        if (reset) begin
             halt = 0;
-            cycle <= 0;
-            pc <= 16'h2000;
+            pc = 16'h2000;
             sp <= 16'h1c00;
+            decoder_latch = 0;
+            reset_cycle_on_5 = 0;
+            reset_cycle_to_4 = 0;
         end else case(cycle)
             0: begin
-                //$display("PC %h ADDR %h DATA %h SP %h", 
-                //    pc, address_bus, data_bus, sp);
-                //$display("ZERO %b CARRY %b OVERFLOW %b NEGATIVE %b HALT %b",
-                //    zero, carry, overflow, negative, halt);
-                //for(i=0; i < 8; i=i+1) begin
-                //    $display("R%h = %h (%d) R%h = %h (%d)", 
-                //        i<<1, rg[i<<1], rg[i<<1],
-                //        (i<<1)+1'b1, rg[(i<<1)+1'b1], rg[(i<<1)+1'b1]);
-                //end
-                //for(i=0; i < 4; i=i+1) begin
-                //    $display("ER%h = %h (%d)", i, erg[i], erg[i]);
-                //end
+                if (check_branch)
+                    pc = pc + {{7{pc_branch_jump[8]}}, pc_branch_jump} - 16'h0002;
 
-                address_bus <= pc;
-                pc <= pc + 16'b1;
-                r <= 1'b1;
-                w <= 1'b0;
-                cycle <= 1;
+                address_bus = pc;
+                pc = pc + 16'b1;
+                {r, w} = 2'b10;
+                
+                decoder_latch = 0;
+                reset_cycle_on_5 = 0;
+                reset_cycle_to_4 = 0;
+                
+                case(operator_group)
+                    `GROUP_MATH_CONSTANT, `GROUP_MATH_REG, `GROUP_SINGLE_REG: flags = alu8_flags;
+                    `GROUP_MATH_EREG: flags = alu16_flags;
+                    `GROUP_OTHERS: flags = flager_flags;
+                endcase
+
+                case(operator_group)
+                    `GROUP_MATH_CONSTANT, `GROUP_MATH_REG, `GROUP_SINGLE_REG: rg[rg1] = alu8_result;
+                    `GROUP_MATH_EREG: {rg[erg1_rg1], rg[erg1_rg2]} = alu16_result;
+                endcase
+                
+                debug_cpu();
             end
             1: begin
-                r <= 1'b0;
-                first_byte_latch <= 1;
-                cycle <= 2;
+                word[7:0] = data_bus;
+                {r, w} = 2'b00;
             end
             2: begin
-                first_byte_latch <= 0;
-                address_bus <= pc;
-                pc <= pc + 16'b1;
-                r <= 1'b1;
-                w <= 1'b0;
-                cycle <= 3;
+                {r, w} = 2'b10;
+                address_bus = pc;
+                pc = pc + 16'b1;
             end
             3: begin
-                r <= 1'b0;
-                w <= 1'b0;
-                check_second_byte(data_bus);
+                word[15:8] = data_bus;
+                {r, w} = 2'b00;
+                decoder_latch = 1;
             end
             4: begin
                 first_extend_action();
-                cycle <= 5;
             end
             5: begin
                 second_extend_action();
@@ -141,10 +153,8 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
             7: begin
                 fourth_extend_action();
             end
-            default: cycle <= 0;
         endcase
     end
     
-    `include "cpu_computes.v"
-    `include "cpu_decoder.v"
+    `include "cpu_cycles.v"
 endmodule

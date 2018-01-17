@@ -12,15 +12,15 @@ module Gpu(clk, reset, data_bus, address_bus, w, r, hs, vs, color);
     output reg hs, vs;
     output reg[7:0] color;
  
-    reg [9:0] row;
-    reg [9:0] line;
+    reg [10:0] row;
+    reg [10:0] line;
      
     reg [7:0] data_bus_out;
     assign data_bus = r ? data_bus_out : 8'bz;
 
     initial begin
-        row <= 0;
-        line <= 0;
+        row = 0;
+        line = 0;
     end
 
     task draw_line;

@@ -1,5 +1,5 @@
-#include "Vcpu.h"
-#include "Vcpu_Cpu.h"
+#include "VCpu.h"
+#include "VCpu_Cpu.h"
 #include "verilated.h"
 #include <unistd.h>
 #include <stdio.h>
@@ -25,8 +25,8 @@ int main(int argc, char **argv, char **env) {
     }
     system("clear");
     Verilated::commandArgs(argc, argv);
-    Vcpu* cpu = new Vcpu;
-    int reset = 1;
+    VCpu* cpu = new VCpu;
+    int reset = 0;
     int cycles = 0;
     while (!Verilated::gotFinish()) { 
         cpu->clk = ~cpu->clk;

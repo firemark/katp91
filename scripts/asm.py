@@ -156,6 +156,8 @@ class LineParser(object):
         self.data = match.groupdict()
 
     def get_bytes_from_group(self):
+        if self.data is None:
+            return 0
         group = self.group
         op = self.data.get('op')
         if op is not None and group == 'BRANCH':
@@ -294,8 +296,7 @@ def parse_to_bytecode(data):
     )
     lines = [
         LineParser(line, num)
-        for num, line in 
-        enumerate(striped_lines)
+        for num, line in enumerate(striped_lines)
     ]
     addr = 0x2000
     for line_parser in lines:

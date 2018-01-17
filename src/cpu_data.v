@@ -77,5 +77,7 @@
 `define GROUP_EXTENDED 7
 `define GROUP_OTHERS 8
 `define GROUP_WRONG 9
+`define GROUP_STACK 10
+`define GROUP_RETURN 11
 
 `endif
