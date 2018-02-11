@@ -1,7 +1,6 @@
 `include "cpu_data.v"
 
-module SetFlager(latch, operator, in_flags, flags);
-    input latch;
+module SetFlager(operator, in_flags, flags);
     input [3:0] operator;
     input [3:0] in_flags;
 
@@ -9,7 +8,7 @@ module SetFlager(latch, operator, in_flags, flags);
     output reg [3:0] flags;
     //assign flags = {carry, overflow, zero, negative};
     
-    always @ (latch) begin
+    always @ (operator or in_flags) begin
         flags = in_flags;
         case(operator)
             //`OP_HLT: begin halt = 1; $finish; end

@@ -2,8 +2,7 @@
 import re
 import sys
 from itertools import chain
-from functools import wraps, reduce
-
+from functools import wraps, reduce 
 math_opcodes = {
     'ADD': 0b0000,
     'ADC': 0b0001,
@@ -317,7 +316,7 @@ def parse_to_bytecode(data):
         for line_parser in lines
     ))
     shout_errors(errs)
-    return [0x00] * 0x2000 + bytecode
+    return bytecode
 
 
 def shout_errors(errs):

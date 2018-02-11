@@ -39,7 +39,7 @@ int main(int argc, char **argv, char **env) {
         if (cpu->clk)
             main_time++;
         cycles++;
-        if (!cpu->halt && cpu->v->cycle == 0) {
+        if (!cpu->halt && cpu->v->cycle == 1) {
             printf("#TIME %d\n", main_time);
             usleep(1000 * cycles * sleep_time);
             cycles = 0;

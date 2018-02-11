@@ -1,22 +1,25 @@
-`define RAM_BUS_SIZE 14
-`define RAM_SIZE ((2 << `RAM_BUS_SIZE - 1) - 1)
+module Ram(clk, data_bus, address_bus, enable, write, read);
+    parameter RAM_BUS_SIZE = 12;
+    parameter RAM_SIZE = (2 << RAM_BUS_SIZE) - 1;
 
-module Ram(clk, data_bus, address_bus, r, w);
     inout [7:0] data_bus;
-    input [`RAM_BUS_SIZE - 1:0] address_bus;
-    input r, w;
+    input [RAM_BUS_SIZE - 1:0] address_bus;
+    input enable, write, read;
     input clk;
-    reg [7:0] store[0:`RAM_SIZE] /* verilator public_flat */;
-     
-    reg [7:0] data_bus_out;
-    assign data_bus = r ? store[address_bus]: 8'bz;
     
-    initial $readmemb("bootloader.bin", store);
+    (* ram_style="block" *)
+    reg [7:0] store[RAM_SIZE:0] /* verilator public_flat */;
+    reg [7:0] data_bus_out;
+
+    assign data_bus = read ? data_bus_out: 8'bz;
+    
+    initial $readmemh("../bootloader.dat", store);
 
     always @(posedge clk)
-        if (w) begin
-            store[address_bus] = data_bus;
-        end else if (r) begin
-            data_bus_out = store[address_bus];
-        end
+        if (enable)
+            if (write)
+                store[address_bus] <= data_bus;
+            else
+                data_bus_out <= store[address_bus];
+        
 endmodule

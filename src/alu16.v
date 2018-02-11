@@ -1,7 +1,6 @@
 `include "cpu_data.v"
 
-module Alu16(latch, value1, value2, operator, result, flags);
-    input latch;
+module Alu16(value1, value2, operator, result, flags);
     input [15:0] value1, value2;
     input [3:0] operator;
 
@@ -9,7 +8,7 @@ module Alu16(latch, value1, value2, operator, result, flags);
     output [3:0] flags; assign flags = {carry, overflow, zero, negative};
     output reg [15:0] result;
     
-    always @(posedge latch) begin
+    always @(value1 or value2 or operator) begin
        old_sign = value1[15];
        case(operator)
             `OP_ADD: {carry, result} = {1'b0, value1} + {1'b0, value2};

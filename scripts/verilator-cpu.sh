@@ -9,6 +9,7 @@ verilator \
     --cc $SRC/alu16.v \
     --cc $SRC/check_branch.v \
     --cc $SRC/decoder.v \
+    --cc $SRC/register.v \
     --cc $SRC/set_flager.v \
     -I$SRC\
     --top-module Cpu \
