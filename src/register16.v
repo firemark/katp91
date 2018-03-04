@@ -1,5 +1,5 @@
-module Register16(cs_in, cs_out, bus_in, bus_out);
-    input cs_in, cs_out;
+module Register16(clk, cs_in, cs_out, bus_in, bus_out);
+    input clk, cs_in, cs_out;
     input [15:0] bus_in;
     output [15:0] bus_out;
     reg [15:0] data;
@@ -8,8 +8,8 @@ module Register16(cs_in, cs_out, bus_in, bus_out);
     
     initial data = 16'h0000;
     
-    always @ (cs_in or bus_in)
+    always @ (posedge clk)
         if (cs_in)
-            data = bus_in;
+            data <= bus_in;
 
 endmodule

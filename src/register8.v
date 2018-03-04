@@ -1,5 +1,5 @@
-module Register8(cs_in, cs1, cs2, bus_in, bus_out1, bus_out2);
-    input cs_in, cs1, cs2;
+module Register8(clk, cs_in, cs1, cs2, bus_in, bus_out1, bus_out2);
+    input clk, cs_in, cs1, cs2;
     input [7:0] bus_in;
     output [7:0] bus_out1, bus_out2;
     reg [7:0] data;
@@ -9,8 +9,8 @@ module Register8(cs_in, cs1, cs2, bus_in, bus_out1, bus_out2);
     
     initial data = 8'h00;
     
-    always @ (cs_in or bus_in)
+    always @ (posedge clk)
         if (cs_in)
-            data = bus_in;
+            data <= bus_in;
 
 endmodule

@@ -1,11 +1,7 @@
-//`include "cpu.v"
-//`include "gpu.v"
-//`include "byte_to_rgb.v"
-//`include "ram.v"
-
 module Board(clkin, /*reset,*/ red, green, blue, led, hsync, vsync, halt);
     input clkin /*verilator clocker*/;
-    reg reset = 0;
+    reg reset;
+    initial reset = 1;
 
     output [2:0] red, green, blue;
     output [7:0] led;
@@ -15,7 +11,6 @@ module Board(clkin, /*reset,*/ red, green, blue, led, hsync, vsync, halt);
     wire [7:0] data_bus;
     wire [15:0] address_bus;
     wire clk;
-    wire slow_clk;
     wire write, read;
     
     //diodes
@@ -23,18 +18,29 @@ module Board(clkin, /*reset,*/ red, green, blue, led, hsync, vsync, halt);
     Diodes diodes(data_bus, led, cs_diodes, write);
 
     //clock
-    Dcm dcm(
-		 .CLKIN_IN(clkin),
-         .RST_IN(reset),
-		 .CLKFX_OUT(clk),
-         .CLKIN_IBUFG_OUT());
+    //Dcm dcm(
+	//	 .CLKIN_IN(clkin),
+    //     .RST_IN(reset),
+	//	 .CLKFX_OUT(clk),
+    //     .CLKIN_IBUFG_OUT());
+    
+    assign clk = clkin;
          
-    //slower clock
     reg [3:0] counter;
-    assign slow_clk = counter > 7;
+    //reg [7:0] led_counter;
     
     initial counter = 0;
-    always @ (posedge clk) counter <= counter + 1;
+    //initial led_counter = 0;
+    always @ (posedge clk) begin
+        counter <= counter + 1;
+        if (&counter) begin
+            reset <= 0;
+            //led_counter <= led_counter + 1;
+        end
+            
+    end
+    
+    //assign led = led_counter;
 
     //gpu
     wire [7:0] color;
@@ -50,17 +56,15 @@ module Board(clkin, /*reset,*/ red, green, blue, led, hsync, vsync, halt);
     //ram
     wire cs_ram; assign cs_ram = !address_bus[15];
     Ram ram(
-        slow_clk, data_bus, address_bus[11:0],
+        clk, data_bus, address_bus[11:0],
         cs_ram, write, read);
         
     //cpu
     Cpu cpu(
-        slow_clk, reset,
+        clk, reset,
         data_bus,
         address_bus,
         read, write,
         halt);
         
-        
-
 endmodule

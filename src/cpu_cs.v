@@ -36,3 +36,4 @@
 `define CS_DECODER `CS(20)
 `define CS_NEW_PC `CS(21)
 `define CS_WRITE `CS(22)
+`define CS_READ `CS(23)

@@ -21,7 +21,7 @@
 `define OP_BRC  4'b0100 //carry
 `define OP_BRO  4'b0101 //overflow
 `define OP_BRN  4'b0110 //negative
-`define OP_BRNC 4'b0111 //not carry/
+`define OP_BRNC 4'b0111 //not carry
 `define OP_BRNO 4'b1000 //not overflow
 `define OP_BRNN 4'b1001 //not negative
 `define OP_BRLO 4'b1010 //lower

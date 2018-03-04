@@ -196,8 +196,8 @@ class LineParser(object):
         distance = val - self.addr
         u2 = self.val_to_u2(distance, 9)
         return [
-            0b11 + (opcode << 3) + ((u2 >> 8) << 7),
-            u2 & 0b11111111
+            0b11 + (opcode << 3) + ((u2 & 0b1) << 7),
+            (u2 >> 1) & 0b11111111
         ]
 
     def group_math_reg(self, op, x, y):

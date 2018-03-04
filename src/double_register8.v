@@ -1,8 +1,10 @@
 module DoubleRegister8(
+        clk,
         cs_l_in, cs_l_1, cs_l_2, cs_h_in, cs_h_1, cs_h_2,
         cs_16_in, cs_16_1, cs_16_2,
         bus_8_in, bus_8_out1, bus_8_out2,
         bus_16_in, bus_16_out1, bus_16_out2);
+    input clk;
     input cs_l_in, cs_l_1, cs_l_2;
     input cs_h_in, cs_h_1, cs_h_2;
     input cs_16_in, cs_16_1, cs_16_2;
@@ -20,32 +22,32 @@ module DoubleRegister8(
         data_h = 8'h00;
     end
     
-    always @ (cs_l_1 or cs_h_1 or data_l or data_h)
+    always @ (posedge clk)
         if (cs_l_1)
-            bus_8_out1 = data_l;
+            bus_8_out1 <= data_l;
         else if (cs_h_1)
-            bus_8_out1 = data_h;
+            bus_8_out1 <= data_h;
         else
-            bus_8_out1 = 8'bz;
+            bus_8_out1 <= 8'bz;
             
-    always @ (cs_l_2 or cs_h_2 or data_l or data_h)
+    always @ (posedge clk)
         if (cs_l_2)
-            bus_8_out2 = data_l;
+            bus_8_out2 <= data_l;
         else if (cs_h_2)
-            bus_8_out2 = data_h;
+            bus_8_out2 <= data_h;
         else
-            bus_8_out2 = 8'bz;
+            bus_8_out2 <= 8'bz;
     
-    always @ (cs_l_in or cs_16_in or bus_8_in or bus_16_in)
+    always @ (posedge clk)
         if (cs_l_in)
-            data_l = bus_8_in;
+            data_l <= bus_8_in;
         else if (cs_16_in)
-            data_l = bus_16_in[7:0];
+            data_l <= bus_16_in[7:0];
 
-    always @ (cs_h_in or cs_16_in or bus_8_in or bus_16_in)
+    always @ (posedge clk)
         if (cs_h_in)
-            data_h = bus_8_in;
+            data_h <= bus_8_in;
         else if (cs_16_in)
-            data_h = bus_16_in[15:8];
+            data_h <= bus_16_in[15:8];
 
 endmodule

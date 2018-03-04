@@ -8,15 +8,23 @@ module tester();
     wire [7:0] led;
 
     wire read, write, halt;
-
-    always #2 clk=!clk;
+    
+    reg [1:0] counter;
+    always #1 clk=!clk;
 
     initial begin
         clk = 0;
-        reset = 0;
+        reset = 1;
+        counter = 0;
         $dumpfile("dff.vcd");
         $dumpvars;
         #300 $finish;
+    end
+    
+    always @ (posedge clk) begin
+        counter <= counter + 1;
+        if (&counter)
+            reset <= 0;
     end
     
     wire cs_diodes; assign cs_diodes = address_bus[15:12] == 4'b1001;

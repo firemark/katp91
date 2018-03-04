@@ -1,7 +1,9 @@
 `include "cpu_data.v"
 
-module Alu8(cs_in, cs_out, cs_flags, single, value1, value2, operator, bus_in, bus_flags);
-    input cs_in, cs_out, cs_flags, single;
+module Alu8(clk, cs_in, cs_out, single, value1, value2, operator, bus_in, check_branch);
+    input clk;
+    input cs_in, cs_out, single;
+    output reg check_branch;
     input [7:0] value1, value2;
     input [3:0] operator;
 
@@ -9,23 +11,20 @@ module Alu8(cs_in, cs_out, cs_flags, single, value1, value2, operator, bus_in, b
     reg [7:0] result;
         
     output [7:0] bus_in;
-    output [3:0] bus_flags;
     assign bus_in = cs_out? result : 8'bz;
-    assign bus_flags = cs_flags? {carry, overflow, zero, negative} : 4'bz;
     
-    always @(cs_in or single or value1 or value2 or operator)
+    always @(posedge clk)
         if (cs_in) begin
             old_sign = value1[7];
             if (!single)
                 case(operator)
                     `OP_ADD: {carry, result} = {1'b0, value1} + {1'b0, value2};
-                    `OP_SUB: {carry, result} = {1'b0, value1} - {1'b0, value2};
+                    `OP_SUB, `OP_CMP: {carry, result} = {1'b0, value1} - {1'b0, value2};
                     `OP_ADC: {carry, result} = {1'b0, value1} + {1'b0, value2} + {7'b0, carry};
                     `OP_SBC: {carry, result} = {1'b0, value1} - {1'b0, value2} - {7'b0, carry};
                     `OP_AND: result = value1 & value2;
                     `OP_OR: result = value1 | value2;
                     `OP_XOR: result = value1 ^ value2;
-                    `OP_CMP: {carry, result} = {1'b0, value1} - {1'b0, value2};
                     `OP_MOV: result = value2;
                     default: result = 8'hAA;
                 endcase
@@ -45,4 +44,22 @@ module Alu8(cs_in, cs_out, cs_flags, single, value1, value2, operator, bus_in, b
             zero = &result;
             negative = result[7];
         end
+        
+    always @(operator or zero or negative or overflow or carry)
+        case (operator)
+            `OP_BREQ: check_branch = zero;
+            `OP_BRNE: check_branch = ~zero;
+            `OP_BRLT: check_branch = negative ^ overflow;
+            `OP_BRGE: check_branch = ~(negative ^ overflow);
+            `OP_BRC: check_branch = carry;
+            `OP_BRNC: check_branch = ~carry;
+            `OP_BRO: check_branch = overflow;
+            `OP_BRNO: check_branch = ~overflow;
+            `OP_BRN: check_branch = negative;
+            `OP_BRNN: check_branch = ~negative;
+            `OP_BRLO: check_branch = carry;
+            `OP_BRSH: check_branch = ~carry;
+            `OP_RJMP: check_branch = 1'b1;
+            default: check_branch = 1'b0;
+        endcase
 endmodule

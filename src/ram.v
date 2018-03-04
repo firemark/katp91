@@ -8,7 +8,7 @@ module Ram(clk, data_bus, address_bus, enable, write, read);
     input clk;
     
     (* ram_style="block" *)
-    reg [7:0] store[RAM_SIZE:0] /* verilator public_flat */;
+    reg [7:0] store[RAM_SIZE - 1:0] /* verilator public_flat */;
     reg [7:0] data_bus_out;
 
     assign data_bus = read ? data_bus_out: 8'bz;
