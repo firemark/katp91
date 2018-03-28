@@ -1,6 +1,6 @@
 CONFIG VCCAUX = "3.3" ;
 
-NET "clkin" LOC = P129;
+NET "clkin" LOC = P129 | IOSTANDARD = LVCMOS33 | PERIOD = 12MHz;
 TIMESPEC TS_CLK = PERIOD "clkin" 12 MHz HIGH 50%;
 
 
@@ -44,18 +44,18 @@ TIMESPEC TS_CLK = PERIOD "clkin" 12 MHz HIGH 50%;
 # Seven Segment Display
 ############################################################################
 
-    #NET "SevenSegment[7]"    LOC = P114  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
-    #NET "SevenSegment[6]"    LOC = P115  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
-    #NET "SevenSegment[5]"    LOC = P116  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
-    #NET "SevenSegment[4]"    LOC = P117  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
-    #NET "SevenSegment[3]"    LOC = P110  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
-    #NET "SevenSegment[2]"    LOC = P111  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
-    #NET "SevenSegment[1]"    LOC = P112  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
-    #NET "SevenSegment[0]"    LOC = P113 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
+    NET "segments[7]"   LOC = P117 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; // a
+    NET "segments[6]"   LOC = P116 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; // b
+    NET "segments[5]"   LOC = P115 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; // c
+    NET "segments[4]"   LOC = P113 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; // d
+    NET "segments[3]"   LOC = P112 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; // e
+    NET "segments[2]"   LOC = P111 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; // f
+    NET "segments[1]"   LOC = P110 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; // g
+    NET "segments[0]"   LOC = P114 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; // dp
 
-    #NET "Enable[3]"          LOC = P124 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
-    #NET "Enable[2]"          LOC = P121 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
-    #NET "Enable[1]"          LOC = P120  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
+    NET "enable_segments[2]"  LOC = P124 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; // S3
+    NET "enable_segments[1]"  LOC = P121 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; // S2
+    NET "enable_segments[0]"         LOC = P120 | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; // S1
 
 ############################################################################
 # LED

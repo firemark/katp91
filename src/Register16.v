@@ -6,7 +6,9 @@ module Register16(clk, cs_in, cs_out, bus_in, bus_out);
     
     assign bus_out = cs_out? data : 16'bz;
     
-    initial data = 16'h0000;
+    parameter DEFAULT = 16'h0000;
+    
+    initial data = DEFAULT;
     
     always @ (posedge clk)
         if (cs_in)

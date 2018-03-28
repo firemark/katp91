@@ -35,7 +35,7 @@ module Decoder(
     always @ (posedge clk)
         if (cs)
             new_pc <= (pc - 16'h02) + {{7{diff_pc[8]}}, diff_pc};
-    
+
     always @ (posedge clk) begin
         if (cs) casez(first_byte)
             8'b???????0, 8'b??????01: begin //MATH CONSTANT GROUP

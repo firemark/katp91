@@ -1,10 +1,9 @@
-module Board(clkin, /*reset,*/ red, green, blue, led, hsync, vsync, halt);
+module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments, hsync, vsync, halt);
     input clkin /*verilator clocker*/;
     reg reset;
     initial reset = 1;
 
     output [2:0] red, green, blue;
-    output [7:0] led;
     output hsync, vsync;
     output halt;
     
@@ -14,8 +13,21 @@ module Board(clkin, /*reset,*/ red, green, blue, led, hsync, vsync, halt);
     wire write, read;
     
     //diodes
+    output [7:0] led;
     wire cs_diodes; assign cs_diodes = address_bus[15:12] == 4'b1001;
     Diodes diodes(data_bus, led, cs_diodes, write);
+    
+    //led counter
+    output [2:0] enable_segments;
+    output [7:0] segments;
+    wire cs_led_counter; assign cs_led_counter = address_bus[15:12] == 4'b1010;
+    LedCounter led_counter(
+        .clk(clk),
+        .data_bus(data_bus),
+        .enable(cs_led_counter),
+        .write(write),
+        .segments(segments),
+        .enable_segments(enable_segments));
 
     //clock
     //Dcm dcm(
@@ -51,7 +63,9 @@ module Board(clkin, /*reset,*/ red, green, blue, led, hsync, vsync, halt);
         cs_gpu & write,
         cs_gpu & read,
         hsync, vsync, color);
-    Byte_to_rgb byte_to_rgb(color, red, green, blue);
+    assign red = color[2:0];
+    assign green = color[5:3];
+    assign blue = color[7:6];
     
     //ram
     wire cs_ram; assign cs_ram = !address_bus[15];

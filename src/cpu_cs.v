@@ -10,6 +10,7 @@
 `define CS_IN_ERG1 `CS(6)
 `define CS_IN_ERG2 `CS(7)
 
+
 // internal bus
 `define CS_OUT_DATA `CS(8)
 `define CS_IN_DATA `CS(9)
@@ -18,6 +19,22 @@
 // program counter
 `define CS_OUT_PC `CS(11)
 `define CS_IN_PC `CS(12)
+`define CS_OUT_PC_H `CS(26)
+`define CS_IN_PC_H `CS(27)
+`define CS_OUT_PC_L `CS(28)
+`define CS_IN_PC_L `CS(29)
+
+// word counter
+`define CS_OUT_WD `CS(30)
+`define CS_IN_WD `CS(31)
+`define CS_OUT_WD_H `CS(32)
+`define CS_IN_WD_H `CS(33)
+`define CS_OUT_WD_L `CS(34)
+`define CS_IN_WD_L `CS(35)
+
+// stack pointer
+`define CS_IN_SP `CS(24)
+`define CS_OUT_SP `CS(25)
 
 // alu
 `define CS_OUT_ALU8 `CS(13)

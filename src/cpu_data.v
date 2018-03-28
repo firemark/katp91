@@ -67,17 +67,17 @@
 `define OP_HLT 4'b1111
 
 //Operator groups
-`define GROUP_MATH_CONSTANT 0
-`define GROUP_MATH_REG 1
-`define GROUP_MATH_EREG 2
-`define GROUP_BRANCH_JUMPS 3
-`define GROUP_SINGLE_REG 4
-`define GROUP_REG_MEMORY 5
-`define GROUP_SINGLE_EREG 6
-`define GROUP_EXTENDED 7
-`define GROUP_OTHERS 8
-`define GROUP_WRONG 9
-`define GROUP_STACK 10
-`define GROUP_RETURN 11
+`define GROUP_MATH_CONSTANT 4'h0
+`define GROUP_MATH_REG 4'h1
+`define GROUP_MATH_EREG 4'h2
+`define GROUP_BRANCH_JUMPS 4'h3
+`define GROUP_SINGLE_REG 4'h4
+`define GROUP_REG_MEMORY 4'h5
+`define GROUP_SINGLE_EREG 4'h6
+`define GROUP_EXTENDED 4'h7
+`define GROUP_OTHERS 4'h8
+`define GROUP_WRONG 4'h9
+`define GROUP_STACK 4'hA
+`define GROUP_RETURN 4'hB
 
 `endif

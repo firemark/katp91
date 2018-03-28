@@ -1,53 +1,35 @@
 module DoubleRegister8(
         clk,
-        cs_l_in, cs_l_1, cs_l_2, cs_h_in, cs_h_1, cs_h_2,
-        cs_16_in, cs_16_1, cs_16_2,
-        bus_8_in, bus_8_out1, bus_8_out2,
-        bus_16_in, bus_16_out1, bus_16_out2);
+        bus_in, bus_out,
+        cs_h_in, cs_l_in, cs_16_in,
+        cs_h_out, cs_l_out, cs_16_out);
+    input [15:0] bus_in;
+    output reg [15:0] bus_out;
+    input cs_h_in, cs_l_in, cs_16_in;
+    input cs_h_out, cs_l_out, cs_16_out;
     input clk;
-    input cs_l_in, cs_l_1, cs_l_2;
-    input cs_h_in, cs_h_1, cs_h_2;
-    input cs_16_in, cs_16_1, cs_16_2;
-    input [7:0] bus_8_in;
-    input [15:0] bus_16_in;
-    output reg [7:0] bus_8_out1, bus_8_out2;
-    output [15:0] bus_16_out1, bus_16_out2;
-    reg [7:0] data_l, data_h;
     
-    assign bus_16_out1 = cs_16_1? {data_h, data_l} : 16'bz;
-    assign bus_16_out2 = cs_16_2? {data_h, data_l} : 16'bz;
-    
-    initial begin
-        data_l = 8'h00;
-        data_h = 8'h00;
-    end
-    
+    reg [7:0] data_l, data_h /* verilator public_flat */;
+        
     always @ (posedge clk)
-        if (cs_l_1)
-            bus_8_out1 <= data_l;
-        else if (cs_h_1)
-            bus_8_out1 <= data_h;
+        if (cs_h_out)
+            bus_out <= {8'h00, data_h};
+        else if (cs_l_out)
+            bus_out <= {8'h00, data_l};
+        else if (cs_16_out)
+            bus_out <= {data_h, data_l};
         else
-            bus_8_out1 <= 8'bz;
+            bus_out <= 16'bz;
             
-    always @ (posedge clk)
-        if (cs_l_2)
-            bus_8_out2 <= data_l;
-        else if (cs_h_2)
-            bus_8_out2 <= data_h;
-        else
-            bus_8_out2 <= 8'bz;
-    
-    always @ (posedge clk)
-        if (cs_l_in)
-            data_l <= bus_8_in;
-        else if (cs_16_in)
-            data_l <= bus_16_in[7:0];
-
-    always @ (posedge clk)
+    always @(posedge clk)
         if (cs_h_in)
-            data_h <= bus_8_in;
-        else if (cs_16_in)
-            data_h <= bus_16_in[15:8];
-
+            data_h <= bus_in[7:0];
+        else if (cs_l_in)
+            data_l <= bus_in[7:0];
+        else if (cs_16_in) begin
+            data_h <= bus_in[15:8];
+            data_l <= bus_in[7:0];
+        end
+        
 endmodule
+

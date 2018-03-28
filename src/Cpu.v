@@ -12,48 +12,44 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
     output reg r, w;
     output reg halt;
 
-    reg [31:0] cs;
+    wire [35:0] cs;
     
-    parameter [16:0]
-        CYCLE_0 = 1 << 0,
-        CYCLE_1 = 1 << 1,
-        CYCLE_2 = 1 << 2,
-        CYCLE_3 = 1 << 3,
-        CYCLE_4 = 1 << 4,
-        CYCLE_5 = 1 << 5,
-        CYCLE_6 = 1 << 6,
-        CYCLE_7 = 1 << 7,
-        CYCLE_8 = 1 << 8,
-        CYCLE_9 = 1 << 9,
-        CYCLE_10 = 1 << 10,
-        CYCLE_11 = 1 << 11,
-        CYCLE_12 = 1 << 12,
-        CYCLE_13 = 1 << 13,
-        CYCLE_14 = 1 << 14,
-        CYCLE_15 = 1 << 15;
-    reg [15:0] cycle  /*verilator public*/;
+    parameter [3:0]
+        CYCLE_0 = 4'b0000,
+        CYCLE_1 = 4'b0001,
+        CYCLE_2 = 4'b0011,
+        CYCLE_3 = 4'b0010,
+        CYCLE_4 = 4'b0110,
+        CYCLE_5 = 4'b0111,
+        CYCLE_6 = 4'b0101,
+        CYCLE_7 = 4'b0100,
+        CYCLE_8 = 4'b1100,
+        CYCLE_9 = 4'b1101,
+        CYCLE_10 = 4'b1111,
+        CYCLE_11 = 4'b1110,
+        CYCLE_12 = 4'b1010,
+        CYCLE_13 = 4'b1011,
+        CYCLE_14 = 4'b1001,
+        CYCLE_15 = 4'b1000;
+    reg [3:0] cycle  /*verilator public*/;
     
     reg [7:0] data_bus_out;
     
     wire [15:0] bus_out1, bus_out2, bus_in;
     wire [3:0] in_rg, out_rg1, out_rg2;
 
-    genvar i;
-    generate
-        for(i=0; i < 8; i = i + 1) begin
-            Register8 register8(
-                .clk(inv_clk),
-                .cs_in(
-                    `CS_ON(`CS_IN_RG1) && out_rg1 == i ||
-                    `CS_ON(`CS_IN_RG2) && out_rg2 == i),
-                .cs1(`CS_ON(`CS_OUT_RG1) && out_rg1 == i),
-                .cs2(`CS_ON(`CS_OUT_RG2) && out_rg2 == i),
-                .bus_in(bus_in[7:0]),
-                .bus_out1(bus_out1[7:0]),
-                .bus_out2(bus_out2[7:0]));
-        end
-    endgenerate
+    Registers registers(
+        .clk(inv_clk),
+        .cs_in(`CS_ON(`CS_IN_RG1) && !out_rg1[3]),
+        .cs_out1(`CS_ON(`CS_OUT_RG1) && !out_rg1[3]),
+        .cs_out2(`CS_ON(`CS_OUT_RG2) && !out_rg2[3]),
+        .num1(out_rg1[2:0]),
+        .num2(out_rg2[2:0]),
+        .bus_in(bus_in[7:0]),
+        .bus_out1(bus_out1[7:0]),
+        .bus_out2(bus_out2[7:0]));
 
+    /*genvar i;
     generate
         for(i=0; i < 4; i = i + 1) begin
             DoubleRegister8 double_register8(
@@ -80,7 +76,24 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
                 .bus_16_out1(bus_out1),
                 .bus_16_out2(bus_out2));
         end
-    endgenerate
+    endgenerate*/
+    
+    DoubleRegisters double_registers(
+        .clk(inv_clk),
+        .num1(out_rg1[2:1]),
+        .num2(out_rg2[2:1]),
+        .cs_h_in(`CS_ON(`CS_IN_RG1) && out_rg1[3] && out_rg1[0]),
+        .cs_l_in(`CS_ON(`CS_IN_RG1) && out_rg1[3] && !out_rg1[0]),
+        .cs_16_in(`CS_ON(`CS_IN_ERG1)),
+        .cs_h_out1(`CS_ON(`CS_OUT_RG1) && out_rg1[3] && out_rg1[0]),
+        .cs_l_out1(`CS_ON(`CS_OUT_RG1) && out_rg1[3] && !out_rg1[0]),
+        .cs_16_out1(`CS_ON(`CS_OUT_ERG1)),
+        .cs_h_out2(`CS_ON(`CS_OUT_RG2) && out_rg2[3] && out_rg2[0]),
+        .cs_l_out2(`CS_ON(`CS_OUT_RG2) && out_rg2[3] && !out_rg2[0]),
+        .cs_16_out2(`CS_ON(`CS_OUT_ERG2)),
+        .bus_in(bus_in),
+        .bus_out1(bus_out1),
+        .bus_out2(bus_out2));
     
     Register16 address_register(inv_clk, `CS_ON(`CS_IN_ADDR), 1'b1, bus_out2, address_bus);
     
@@ -91,10 +104,32 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
         .bus_out(bus_in[7:0]),
         .bus_data(data_bus));
     
-    Register16 pc_register(
+    DoubleRegister8 pc_register(
         .clk(inv_clk),
-        .cs_in(`CS_ON(`CS_IN_PC)),
-        .cs_out(`CS_ON(`CS_OUT_PC)),
+        .cs_16_in(`CS_ON(`CS_IN_PC)),
+        .cs_16_out(`CS_ON(`CS_OUT_PC)),
+        .cs_h_in(`CS_ON(`CS_IN_PC_H)),
+        .cs_h_out(`CS_ON(`CS_OUT_PC_H)),
+        .cs_l_in(`CS_ON(`CS_IN_PC_L)),
+        .cs_l_out(`CS_ON(`CS_OUT_PC_L)),
+        .bus_in(bus_in),
+        .bus_out(bus_out2));
+        
+    DoubleRegister8 wd_register(
+        .clk(inv_clk),
+        .cs_16_in(`CS_ON(`CS_IN_WD)),
+        .cs_16_out(`CS_ON(`CS_OUT_WD)),
+        .cs_h_in(`CS_ON(`CS_IN_WD_H)),
+        .cs_h_out(`CS_ON(`CS_OUT_WD_H)),
+        .cs_l_in(`CS_ON(`CS_IN_WD_L)),
+        .cs_l_out(`CS_ON(`CS_OUT_WD_L)),
+        .bus_in(bus_in),
+        .bus_out(bus_out2));
+        
+    Register16 #(16'h0FFF) sp_register(
+        .clk(inv_clk),
+        .cs_in(`CS_ON(`CS_IN_SP)),
+        .cs_out(`CS_ON(`CS_OUT_SP)),
         .bus_in(bus_in),
         .bus_out(bus_out2));
     
@@ -140,8 +175,16 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
     initial begin
         halt = 0;
         cycle = CYCLE_0;
-        cs = 0;
     end
+    
+    CsDecoder cs_decoder(
+        .reset(reset),
+        .cs(cs),
+        .cycle(cycle),
+        .operator(operator),
+        .operator_group(operator_group),
+        .check_branch(check_branch)
+    );
 
 
     always @ (posedge clk or posedge reset)
@@ -153,7 +196,9 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
             CYCLE_2: cycle <= CYCLE_3;
             CYCLE_3: cycle <= CYCLE_4;
             CYCLE_4: cycle <= CYCLE_5;
-            CYCLE_5: cycle <= CYCLE_0;
+            CYCLE_5: cycle <= extended_cycle? CYCLE_6: CYCLE_0;
+            CYCLE_6: cycle <= CYCLE_7;
+            CYCLE_7: cycle <= CYCLE_8;
             default: cycle <= CYCLE_0;
         endcase 
         
@@ -187,68 +232,6 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
         endcase
     end
         
-    always @ (cycle or operator_group or operator or check_branch)
-        case (cycle)
-            CYCLE_0: begin
-                if (operator_group == `GROUP_BRANCH_JUMPS && check_branch)
-                    cs = `CS_NEW_PC | `CS_INC | `CS_IN_ADDR;
-                else
-                    cs = `CS_OUT_PC | `CS_INC | `CS_IN_ADDR;
-            end
-            CYCLE_1: begin
-                cs = `CS_OUT_INC_DEC | `CS_IN_PC;
-            end
-            CYCLE_2: begin
-                cs = `CS_OUT_PC | `CS_INC | `CS_IN_ADDR;
-            end
-            CYCLE_3: begin
-                cs = `CS_OUT_INC_DEC | `CS_IN_PC | `CS_DECODER;
-            end
-            CYCLE_4: begin
-                case (operator_group)
-                    `GROUP_SINGLE_REG, `GROUP_MATH_CONSTANT, `GROUP_MATH_REG: begin
-                        cs = `CS_OUT_RG1 | `CS_OUT_RG2 | `CS_IN_ALU8;
-                    end
-                    `GROUP_REG_MEMORY: begin
-                        if (operator[2])
-                            case (operator[1:0])
-                                2'b01: cs = `CS_WRITE | `CS_INC | `CS_OUT_RG1 | `CS_OUT_ERG2 | `CS_IN_ADDR;
-                                2'b10: cs = `CS_WRITE | `CS_DEC | `CS_OUT_RG1 | `CS_OUT_ERG2 | `CS_IN_ADDR;
-                                default: cs = `CS_WRITE | `CS_OUT_RG1 | `CS_OUT_ERG2 | `CS_IN_ADDR; 
-                            endcase
-                        else
-                            case (operator[1:0])
-                                2'b01: cs = `CS_INC | `CS_OUT_ERG2 | `CS_IN_ADDR;
-                                2'b10: cs = `CS_DEC | `CS_OUT_ERG2 | `CS_IN_ADDR;
-                                default: cs = `CS_OUT_ERG2 | `CS_IN_ADDR; 
-                            endcase
-                    end
-                    default: cs = 0;
-                endcase
-            end
-            CYCLE_5: begin
-                case (operator_group)
-                    `GROUP_SINGLE_REG, `GROUP_MATH_CONSTANT, `GROUP_MATH_REG: begin
-                        if (operator != `OP_CMP)
-                            cs = `CS_OUT_FLAGS_ALU8 | `CS_IN_FLAGS | `CS_OUT_ALU8 | `CS_IN_RG1;
-                        else
-                            cs = `CS_OUT_FLAGS_ALU8 | `CS_IN_FLAGS;
-                    end
-                    `GROUP_REG_MEMORY: begin
-                        if (operator[2])
-                            case (operator[1:0])
-                                2'b01, 2'b10: cs = `CS_WRITE | `CS_OUT_RG1 | `CS_IN_ERG2 | `CS_OUT_INC_DEC;
-                                default: cs = `CS_WRITE | `CS_OUT_RG1;
-                            endcase
-                        else
-                            case (operator[1:0])
-                                2'b01, 2'b10: cs = `CS_READ | `CS_IN_RG1 | `CS_IN_ERG2 | `CS_OUT_INC_DEC;
-                                default: cs = `CS_READ | `CS_IN_RG1;
-                            endcase    
-                    end
-                    default: cs = 0;
-                endcase
-            end
-        endcase
+    
     
 endmodule
