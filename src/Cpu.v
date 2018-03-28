@@ -48,35 +48,6 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, halt);
         .bus_in(bus_in[7:0]),
         .bus_out1(bus_out1[7:0]),
         .bus_out2(bus_out2[7:0]));
-
-    /*genvar i;
-    generate
-        for(i=0; i < 4; i = i + 1) begin
-            DoubleRegister8 double_register8(
-                .clk(inv_clk),
-                .cs_l_in(
-                    `CS_ON(`CS_IN_RG1) && out_rg1 == i * 2 + 8 ||
-                    `CS_ON(`CS_IN_RG2) && out_rg2 == i * 2 + 8),
-                .cs_l_1(`CS_ON(`CS_OUT_RG1) && out_rg1 == i * 2 + 8),
-                .cs_l_2(`CS_ON(`CS_OUT_RG2) && out_rg2 == i * 2 + 8),
-                .cs_h_in(
-                    `CS_ON(`CS_IN_RG1) && out_rg1 == i * 2 + 9 ||
-                    `CS_ON(`CS_IN_RG2) && out_rg2 == i * 2 + 9),
-                .cs_h_1(`CS_ON(`CS_OUT_RG1) && out_rg1 == i * 2 + 9),
-                .cs_h_2(`CS_ON(`CS_OUT_RG2) && out_rg2 == i * 2 + 9),
-                .cs_16_in(
-                    `CS_ON(`CS_IN_ERG1) && out_rg1 == i ||
-                    `CS_ON(`CS_IN_ERG2) && out_rg2 == i),
-                .cs_16_1(`CS_ON(`CS_OUT_ERG1) && out_rg1 == i),
-                .cs_16_2(`CS_ON(`CS_OUT_ERG2) && out_rg2 == i),
-                .bus_8_in(bus_in[7:0]),
-                .bus_8_out1(bus_out1[7:0]),
-                .bus_8_out2(bus_out2[7:0]),
-                .bus_16_in(bus_in),
-                .bus_16_out1(bus_out1),
-                .bus_16_out2(bus_out2));
-        end
-    endgenerate*/
     
     DoubleRegisters double_registers(
         .clk(inv_clk),
