@@ -8,10 +8,17 @@
 `define OP_SBC 4'b0011
 `define OP_AND 4'b0100
 `define OP_OR  4'b0110
-`define OP_XOR 4'b1000
-`define OP_MOV 4'b1010
-`define OP_CMP 4'b1100
+`define OP_XOR 4'b0111
+`define OP_MOV 4'b1011
+`define OP_CMP 4'b1111
 
+// Reg memory operators (operators for 16bit)
+`define OP_LD 4'b1000
+`define OP_LDI 4'b1001
+`define OP_LDD 4'b1010
+`define OP_ST 4'b1100
+`define OP_STI 4'b1101
+`define OP_STD 4'b1110
 
 // Branch operators
 `define OP_BREQ 4'b0000 //equality
@@ -38,22 +45,16 @@
 `define OP_ROR 4'b0101
 `define OP_RLC 4'b0110
 `define OP_RRC 4'b0111
-`define OP_PUSH 4'b1000
-`define OP_POP 4'b1001
 
-//Reg memory operators
-`define OP_LD 3'b000
-`define OP_LDI 3'b001
-`define OP_LDD 3'b010
-`define OP_ST 3'b100
-`define OP_STI 3'b101
-`define OP_STD 3'b110
+// Stack operators (Single operators for 16bit)
+`define OP_PUSH 4'b1110
+`define OP_POP 4'b1111
 
-//Extended operators
+// Extended operators
 `define OP_JMP 4'b0000
 `define OP_CALL 4'b0001
 
-//Other operators
+// Other operators
 `define OP_CLC 4'b0000
 `define OP_CLZ 4'b0001
 `define OP_CLO 4'b0010
@@ -66,18 +67,17 @@
 `define OP_RET 4'b1110
 `define OP_HLT 4'b1111
 
-//Operator groups
-`define GROUP_MATH_CONSTANT 4'h0
-`define GROUP_MATH_REG 4'h1
-`define GROUP_MATH_EREG 4'h2
-`define GROUP_BRANCH_JUMPS 4'h3
-`define GROUP_SINGLE_REG 4'h4
-`define GROUP_REG_MEMORY 4'h5
-`define GROUP_SINGLE_EREG 4'h6
-`define GROUP_EXTENDED 4'h7
-`define GROUP_OTHERS 4'h8
-`define GROUP_WRONG 4'h9
-`define GROUP_STACK 4'hA
-`define GROUP_RETURN 4'hB
+// Operator groups
+`define GROUP_CRVMATH 4'h0
+`define GROUP_RJMP 4'h1
+`define GROUP_CRRMATH 4'h2
+`define GROUP_CRSMATH 4'h3
+`define GROUP_WRRMATH 4'h4
+`define GROUP_WRSMATH 4'h5
+`define GROUP_SFLAG 4'h6
+`define GROUP_UFLAG 4'h7
+`define GROUP_SPECIAL 4'h8
+`define GROUP_WRRMATH_MEM 4'h9
+`define GROUP_WRSMATH_STACK 4'hA
 
 `endif

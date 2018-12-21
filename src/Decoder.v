@@ -1,103 +1,44 @@
 `include "cpu_data.v"
 
 module Decoder(
-        clk,
-        cs, word, operator_group, operator, extended_cycle, pc,
-        cs_new_pc, new_out_pc, rg1, rg2, val);
-    input clk;
-    input cs, cs_new_pc;
+        word, 
+        operator_group, operator,
+        rgv, rg1, rg2, val, relative_addr);
     input [15:0] word;
-    input [15:0] pc;
     
-    wire [7:0] first_byte; assign first_byte = word[7:0];
-    wire [7:0] second_byte; assign second_byte = word[15:8];
-    
-    output reg [3:0] operator;
+    output [3:0] operator;
     output reg [3:0] operator_group;
-    reg [15:0] new_pc;
-    output [15:0] new_out_pc; assign new_out_pc = cs_new_pc ? new_pc : 16'bz;
-    output reg extended_cycle;
     
-    output reg [3:0] rg1, rg2;
-    output reg [7:0] val;
+    output [3:0] rgv, rg1, rg2;
+    output [7:0] val;
+    output [7:0] relative_addr;
     
-    initial begin
-        extended_cycle = 0;
-        operator_group = `GROUP_WRONG;
-        new_pc = 0;
-        rg1 = 0;
-        rg2 = 0;
-        val = 0;
-    end
+    assign rgv = word[3:1];
+    assign val = word[11:4];
+    assign rg1 = word[7:5];
+    assign rg2 = word[10:8];
+    assign operator = word[15:12];
+    assign relative_addr = word[7:0];
     
-    wire signed [8:0] diff_pc; assign diff_pc = word[15:7];
-
-    always @ (posedge clk)
-        if (cs)
-            new_pc <= (pc - 16'h02) + {{7{diff_pc[8]}}, diff_pc};
-
-    always @ (posedge clk) begin
-        if (cs) casez(first_byte)
-            8'b???????0, 8'b??????01: begin //MATH CONSTANT GROUP
-                rg1 <= first_byte[7:4];
-                val <= second_byte;
-                operator <= word[3:0];
-                operator_group <= `GROUP_MATH_CONSTANT;
-                extended_cycle <= 0;
-            end
-            8'b?????011: begin //BRANCH JUMPS GROUP
-                operator <= first_byte[6:3];
-                operator_group <= `GROUP_BRANCH_JUMPS;
-                extended_cycle <= 0;
-            end
-            8'b????0111: begin //MATH REG GROUP
-                rg1 <= second_byte[3:0];
-                rg2 <= second_byte[7:4];
-                operator <= word[7:4];
-                operator_group <= `GROUP_MATH_REG;
-                extended_cycle <= 0;
-            end
-            8'b???01111: begin //MATH EREG GROUP
-                rg1 <= {2'b0, second_byte[2:1]};
-                rg2 <= {2'b0, second_byte[4:3]};
-                operator <= word[8:5];
-                operator_group <= `GROUP_MATH_EREG;
-                extended_cycle <= 0;
-            end
-            8'b??011111: begin //SINGLE REG / STACK GROUP
-                rg1 <= second_byte[5:2];
-                operator <= word[9:6];
-                if (word[9:6] == `OP_POP || word[9:6] == `OP_PUSH) begin
-                    operator_group <= `GROUP_STACK;
-                    extended_cycle <= 1;
-                end else begin
-                    operator_group <= `GROUP_SINGLE_REG;
-                    extended_cycle <= 0;
-                end
-                
-            end
-            8'b?0111111: begin //REG MEMORY GROUP
-                operator <= {1'b0, word[9:7]};
-                rg1 <= word[13:10];
-                rg2 <= {2'b0, word[15:14]};
-                operator_group <= `GROUP_REG_MEMORY;
-                extended_cycle <= 1;
-            end
-            8'b01111111: begin //EXTENDED GROUP
-                operator <= word[11:8];
-                operator_group <= `GROUP_EXTENDED;
-                extended_cycle <= 1;
-            end
-            8'b11111111: begin //OTHERS / RETURN GROUP
-                operator <= word[11:8];
-                if (word[11:8] == `OP_RET) begin
-                    operator_group <= `GROUP_OTHERS;
-                    extended_cycle <= 0;
-                end else begin
-                    operator_group <= `GROUP_RETURN;
-                    extended_cycle <= 1;
-                end
-            end
+    always @ (word)
+        casez (word[4:0])
+            5'b0????: operator_group <= `GROUP_CRVMATH;
+            5'b10???: operator_group <= `GROUP_RJMP;
+            5'b11100: operator_group <= `GROUP_CRRMATH;
+            5'b11110: operator_group <= `GROUP_CRSMATH;
+            5'b11101: casez(operator)
+                4'b1011: operator_group <= `GROUP_WRRMATH;
+                4'b1111: operator_group <= `GROUP_WRRMATH;
+                4'b1???: operator_group <= `GROUP_WRRMATH_MEM;
+                default: operator_group <= `GROUP_WRRMATH;
+            endcase
+            5'b11111: casez(operator[2:0])
+                3'b111: operator_group <= `GROUP_WRSMATH_STACK;
+                default: operator_group <= `GROUP_WRSMATH;
+            endcase
+            5'b11000: operator_group <= `GROUP_SFLAG;
+            5'b11001: operator_group <= `GROUP_UFLAG;
+            5'b11011: operator_group <= `GROUP_SPECIAL;
         endcase
-    end
+
 endmodule
