@@ -12,7 +12,6 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     output reg r, w;
     output reg halt;
     
-
     parameter [3:0]
         CYCLE_0 = 0,
         CYCLE_1 = 1,
@@ -22,9 +21,13 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     reg [3:0] cycle  /*verilator public*/;
     
     reg [7:0] flags;
-    reg [15:0] registers [0:3];
+    reg [15:0] inc_register, dec_register;
+    wire [15:0] after_inc_register, after_dec_register;
     reg [15:0] pc_register, sp_register, data_register;
     assign data_bus = w? data_register : 16'bz ;
+    assign after_inc_register = inc_register + 1;
+    assign after_dec_register = dec_register - 1;
+
         
     reg [15:0] word;
     wire [7:0] val;
@@ -42,16 +45,29 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
         .rg2(num_rg2),
         .relative_addr(relative_addr));
     
+    reg [1:0] cs_write_registers;
+    reg [15:0] register_in;
+    wire [15:0] register_out [0:1];
+    Registers registers(
+        .clk(clk),
+        .num1(num_rg1[2:1]),
+        .num2(num_rg2[2:1]),
+        .write(cs_write_registers),
+        .bus_in(register_in),
+        .bus_out1(register_out[0]),
+        .bus_out2(register_out[1])
+    );
+    
     wire check_branch;
     wire [15:0] alu_out;
     wire [5:0] alu_flags;
     
-    reg [15:0] alu_in1, alu_in2;
+    reg [15:0] alu_in [0:1];
     Alu alu(
         .clk(clk),
         .single(operator_group == `GROUP_CRSMATH || operator_group == `GROUP_WRSMATH),
-        .value1(alu_in1),
-        .value2(alu_in2),
+        .value1(alu_in[0]),
+        .value2(alu_in[1]),
         .operator(operator),
         .bus_out(alu_out),
         .alu_flags(alu_flags),
@@ -95,24 +111,52 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
             address_bus <= 16'h0000;
             pc_register <= 16'h0000;
             sp_register <= 16'h07FF;
+            cs_write_registers <= 2'b00;
         end else casez ({cycle, operator_group})
+            {CYCLE_0, `GROUP_WRRMATH_MEM}: begin
+                if (operator[1]) begin
+                    cs_write_registers <= 2'b10;
+                    register_in <= after_inc_register;
+                end else if (operator[1]) begin
+                    cs_write_registers <= 2'b10;
+                    register_in <= after_dec_register;
+                end
+                address_bus <= pc_register;
+            end
             {CYCLE_0, 4'b????}: begin
+                cs_write_registers <= 2'b00;
                 address_bus <= pc_register;
             end
             {CYCLE_1, 4'b????}: begin
+                cs_write_registers <= 2'b00;
                 pc_register <= pc_register + 1;
                 word <= data_bus;
             end
             {CYCLE_2, `GROUP_WRRMATH}: begin
-                alu_in1 <= registers[num_rg1[2:1]];
-                alu_in2 <= registers[num_rg2[2:1]];
+                alu_in[0] <= register_out[0];
+                alu_in[1] <= register_out[1];
             end
             {CYCLE_2, `GROUP_WRSMATH}: begin
-                alu_in1 <= registers[num_rg1[2:1]];
+                alu_in[0] <= register_out[0];
             end
             {CYCLE_3, `GROUP_WRRMATH}, {CYCLE_3, `GROUP_WRSMATH}: begin
-                registers[num_rg1[2:1]] <= alu_out;
+                register_in[0] <= alu_out;
+                cs_write_registers <= 2'b01;
                 flags[5:0] <= alu_flags;
+            end
+            {CYCLE_2, `GROUP_WRRMATH_MEM}: begin
+                if (operator[2]) begin
+                    data_register <= register_out[0];
+                end
+                address_bus <= register_out[1];
+                inc_register <= register_out[1];
+                dec_register <= register_out[1];
+            end
+            {CYCLE_3, `GROUP_WRRMATH_MEM}: begin
+                if (!operator[2]) begin
+                    register_in[0] <= data_bus;
+                    cs_write_registers <= 2'b01;
+                end
             end
         endcase
     

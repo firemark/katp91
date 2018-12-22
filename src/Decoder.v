@@ -9,9 +9,9 @@ module Decoder(
     output [3:0] operator;
     output reg [3:0] operator_group;
     
-    output [3:0] rgv, rg1, rg2;
+    output [2:0] rgv, rg1, rg2;
     output [7:0] val;
-    output [7:0] relative_addr;
+    output [9:0] relative_addr;
     
     assign rgv = word[3:1];
     assign val = word[11:4];
