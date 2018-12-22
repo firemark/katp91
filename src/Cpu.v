@@ -21,13 +21,8 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     reg [3:0] cycle  /*verilator public*/;
     
     reg [7:0] flags;
-    reg [15:0] inc_register, dec_register;
-    wire [15:0] after_inc_register, after_dec_register;
     reg [15:0] pc_register, sp_register, data_register;
-    assign data_bus = w? data_register : 16'bz ;
-    assign after_inc_register = inc_register + 1;
-    assign after_dec_register = dec_register - 1;
-
+    assign data_bus = w? data_register : 16'bz;
         
     reg [15:0] word;
     wire [7:0] val;
@@ -116,20 +111,21 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
             {CYCLE_0, `GROUP_WRRMATH_MEM}: begin
                 if (operator[1]) begin
                     cs_write_registers <= 2'b10;
-                    register_in <= after_inc_register;
+                    register_in <= register_out[1] + 1;
                 end else if (operator[1]) begin
                     cs_write_registers <= 2'b10;
-                    register_in <= after_dec_register;
-                end
+                    register_in <= register_out[1] - 1;
+                end else
+                    cs_write_registers <= 2'b00;
                 address_bus <= pc_register;
             end
             {CYCLE_0, 4'b????}: begin
                 cs_write_registers <= 2'b00;
                 address_bus <= pc_register;
+                pc_register <= pc_register + 1;
             end
             {CYCLE_1, 4'b????}: begin
                 cs_write_registers <= 2'b00;
-                pc_register <= pc_register + 1;
                 word <= data_bus;
             end
             {CYCLE_2, `GROUP_WRRMATH}: begin
@@ -145,18 +141,35 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                 flags[5:0] <= alu_flags;
             end
             {CYCLE_2, `GROUP_WRRMATH_MEM}: begin
-                if (operator[2]) begin
+                if (operator[2])
                     data_register <= register_out[0];
-                end
                 address_bus <= register_out[1];
-                inc_register <= register_out[1];
-                dec_register <= register_out[1];
             end
             {CYCLE_3, `GROUP_WRRMATH_MEM}: begin
                 if (!operator[2]) begin
-                    register_in[0] <= data_bus;
+                    register_in <= data_bus;
                     cs_write_registers <= 2'b01;
                 end
+            end
+            {CYCLE_2, `GROUP_WRSMATH_STACK}: begin
+                case (operator)
+                    `OP_PUSH: begin
+                        data_register <= register_out[0];
+                        sp_register <= sp_register - 1;
+                        address_bus <= sp_register;
+                    end
+                    `OP_POP: begin
+                        sp_register <= sp_register + 1;
+                        address_bus <= sp_register + 1;
+                    end
+                endcase
+            end
+            {CYCLE_3, `GROUP_WRSMATH_STACK}: begin
+                case (operator)
+                    `OP_POP: begin
+                        register_in <= data_bus;
+                    end
+                endcase
             end
         endcase
     

@@ -22,23 +22,23 @@ module Decoder(
     
     always @ (word)
         casez (word[4:0])
-            5'b0????: operator_group <= `GROUP_CRVMATH;
-            5'b10???: operator_group <= `GROUP_RJMP;
-            5'b11100: operator_group <= `GROUP_CRRMATH;
-            5'b11110: operator_group <= `GROUP_CRSMATH;
-            5'b11101: casez(operator)
-                4'b1011: operator_group <= `GROUP_WRRMATH;
-                4'b1111: operator_group <= `GROUP_WRRMATH;
-                4'b1???: operator_group <= `GROUP_WRRMATH_MEM;
-                default: operator_group <= `GROUP_WRRMATH;
+            5'b0????: operator_group = `GROUP_CRVMATH;
+            5'b10???: operator_group = `GROUP_RJMP;
+            5'b11100: operator_group = `GROUP_CRRMATH;
+            5'b11110: operator_group = `GROUP_CRSMATH;
+            5'b11101: casez(word[15:12])
+                4'b1011: operator_group = `GROUP_WRRMATH;
+                4'b1111: operator_group = `GROUP_WRRMATH;
+                4'b1???: operator_group = `GROUP_WRRMATH_MEM;
+                default: operator_group = `GROUP_WRRMATH;
             endcase
-            5'b11111: casez(operator[2:0])
-                3'b111: operator_group <= `GROUP_WRSMATH_STACK;
-                default: operator_group <= `GROUP_WRSMATH;
+            5'b11111: casez(word[15:13])
+                3'b111: operator_group = `GROUP_WRSMATH_STACK;
+                default: operator_group = `GROUP_WRSMATH;
             endcase
-            5'b11000: operator_group <= `GROUP_SFLAG;
-            5'b11001: operator_group <= `GROUP_UFLAG;
-            5'b11011: operator_group <= `GROUP_SPECIAL;
+            5'b11000: operator_group = `GROUP_SFLAG;
+            5'b11001: operator_group = `GROUP_UFLAG;
+            5'b11011: operator_group = `GROUP_SPECIAL;
         endcase
 
 endmodule
