@@ -1,17 +1,17 @@
 module Ram(clk, data_bus, address_bus, enable, write, read);
-    parameter RAM_BUS_SIZE = 12;
+    parameter RAM_BUS_SIZE = 11;
     parameter RAM_SIZE = (2 << RAM_BUS_SIZE) - 1;
 
-    inout [7:0] data_bus;
+    inout [15:0] data_bus;
     input [RAM_BUS_SIZE - 1:0] address_bus;
     input enable, write, read;
     input clk;
     
     (* ram_style="block" *)
-    reg [7:0] store[RAM_SIZE - 1:0] /* verilator public_flat */;
-    reg [7:0] data_bus_out;
+    reg [15:0] store[RAM_SIZE - 1:0] /* verilator public_flat */;
+    reg [15:0] data_bus_out;
 
-    assign data_bus = read ? data_bus_out: 8'bz;
+    assign data_bus = read ? data_bus_out: 16'bz;
     
     initial $readmemh("../bootloader.dat", store);
 

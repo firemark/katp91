@@ -41,10 +41,14 @@ module DoubleRegisters(
     always @(posedge clk)
         if (cs_h_in)
             store_h[num1] <= bus_in[7:0];
-        else if (cs_l_in)
-            store_l[num1] <= bus_in[7:0];
         else if (cs_16_in) begin
             store_h[num1] <= bus_in[15:8];
+        end
+        
+    always @(posedge clk)
+        if (cs_l_in)
+            store_l[num1] <= bus_in[7:0];
+        else if (cs_16_in) begin
             store_l[num1] <= bus_in[7:0];
         end
         

@@ -7,7 +7,7 @@ module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments,
     output hsync, vsync;
     output halt;
     
-    wire [7:0] data_bus;
+    wire [15:0] data_bus;
     wire [15:0] address_bus;
     wire clk;
     wire write, read;
@@ -15,7 +15,7 @@ module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments,
     //diodes
     output [7:0] led;
     wire cs_diodes; assign cs_diodes = address_bus[15:12] == 4'b1001;
-    Diodes diodes(data_bus, led, cs_diodes, write);
+    Diodes diodes(data_bus[7:0], led, cs_diodes, write);
     
     //led counter
     output [2:0] enable_segments;
@@ -23,7 +23,7 @@ module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments,
     wire cs_led_counter; assign cs_led_counter = address_bus[15:12] == 4'b1010;
     LedCounter led_counter(
         .clk(clk),
-        .data_bus(data_bus),
+        .data_bus(data_bus[7:0]),
         .enable(cs_led_counter),
         .write(write),
         .segments(segments),
@@ -58,11 +58,15 @@ module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments,
     wire [7:0] color;
     wire cs_gpu; assign cs_gpu = address_bus[15:12] == 4'b1111;
     Gpu gpu(
-        clk, reset,
-        data_bus, address_bus[7:0],
-        cs_gpu & write,
-        cs_gpu & read,
-        hsync, vsync, color);
+        .clk(clk),
+        .reset(reset),
+        .data_bus(data_bus),
+        .address_bus(address_bus[7:0]),
+        .w(cs_gpu & write),
+        .r(cs_gpu & read),
+        .hs(hsync),
+        .vs(vsync),
+        .color(color));
     assign red = color[2:0];
     assign green = color[5:3];
     assign blue = color[7:6];
@@ -70,15 +74,22 @@ module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments,
     //ram
     wire cs_ram; assign cs_ram = !address_bus[15];
     Ram ram(
-        clk, data_bus, address_bus[11:0],
-        cs_ram, write, read);
+        .clk(clk),
+        .data_bus(data_bus),
+        .address_bus(address_bus[10:0]),
+        .enable(cs_ram),
+        .write(write),
+        .read(read));
         
     //cpu
     Cpu cpu(
-        clk, reset,
-        data_bus,
-        address_bus,
-        read, write,
-        halt);
+        .clk(clk),
+        .reset(reset),
+        .data_bus(data_bus),
+        .address_bus(address_bus),
+        .r(read),
+        .w(write),
+        .interrupts(8'b0),
+        .halt(halt));
         
 endmodule

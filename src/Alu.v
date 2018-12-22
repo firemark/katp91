@@ -1,6 +1,6 @@
 `include "cpu_data.v"
 
-module Alu(clk, single, value1, value2, operator, bus_out, check_branch);
+module Alu(clk, single, value1, value2, operator, bus_out, alu_flags, check_branch);
     input clk;
     input single;
     output reg check_branch;
@@ -8,7 +8,10 @@ module Alu(clk, single, value1, value2, operator, bus_out, check_branch);
     input [3:0] operator;
 
     reg old_sign, carry, overflow, zero, negative;
+    output alu_flags;
     output reg [15:0] bus_out;
+    
+    assign alu_flags = {old_sign, carry, overflow, zero, negative};
     
     always @(posedge clk) begin
         old_sign = value1[7];

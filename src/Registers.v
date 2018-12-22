@@ -1,19 +1,20 @@
-module Registers(clk, bus_in, bus_out1, bus_out2, num1, num2, cs_in, cs_out1, cs_out2);
-    input [7:0] bus_in;
-    output [7:0] bus_out1, bus_out2;
-    input [2:0] num1, num2;
-    input cs_in;
-    input cs_out1, cs_out2;
+module Registers(clk, bus_in, write, bus_out1, bus_out2, num1, num2);
+    input [15:0] bus_in;
+    output [15:0] bus_out1, bus_out2;
+    input [3:0] num1, num2;
+    input [1:0] write;
     input clk;
     
     (* ram_style="block" *)
-    reg [7:0] store[7:0] /* verilator public_flat */;
+    reg [15:0] store[15:0] /* verilator public_flat */;
 
-    assign bus_out1 = cs_out1 ? store[num1]: 8'bz;
-    assign bus_out2 = cs_out2 ? store[num2]: 8'bz;
+    assign bus_out1 = !write ? store[num1] : 16'bz;
+    assign bus_out2 = !write ? store[num2] : 16'bz;
     
     always @(posedge clk)
-        if (cs_in)
+        if (write[0])
             store[num1] <= bus_in;
+        else if (write[1])
+            store[num2] <= bus_in;
         
 endmodule

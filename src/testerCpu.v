@@ -3,7 +3,7 @@ module tester();
     reg reset;
 
     wire [15:0] address_bus;
-    wire [7:0] data_bus;
+    wire [15:0] data_bus;
 
     wire [7:0] led;
 
@@ -28,18 +28,24 @@ module tester();
     end
     
     wire cs_diodes; assign cs_diodes = address_bus[15:12] == 4'b1001;
-    Diodes diodes(data_bus, led, cs_diodes, write);
-  
+    Diodes diodes(data_bus[7:0], led, cs_diodes, write);
+
     wire cs_ram; assign cs_ram = !address_bus[15];
     Ram ram(
-        clk, data_bus, address_bus[11:0],
-        cs_ram, write, read);
+        .clk(clk),
+        .data_bus(data_bus),
+        .address_bus(address_bus[10:0]),
+        .enable(cs_ram),
+        .write(write),
+        .read(read));
         
-    //cpu
     Cpu cpu(
-        clk, reset,
-        data_bus,
-        address_bus,
-        read, write,
-        halt);
+        .clk(clk),
+        .reset(reset),
+        .data_bus(data_bus),
+        .address_bus(address_bus),
+        .r(read),
+        .w(write),
+        .interrupts(8'b0),
+        .halt(halt));
 endmodule
