@@ -50,9 +50,9 @@
 `define OP_PUSH 4'b1110
 `define OP_POP 4'b1111
 
-// Extended operators
-`define OP_JMP 4'b0000
-`define OP_CALL 4'b0001
+// Long operators
+`define OP_JMP 4'b1110
+`define OP_CALL 4'b1111
 
 // Other operators
 `define OP_CLC 4'b0000
@@ -79,5 +79,6 @@
 `define GROUP_SPECIAL 4'h8
 `define GROUP_WRRMATH_MEM 4'h9
 `define GROUP_WRSMATH_STACK 4'hA
+`define GROUP_SPECIAL_LONG 4'hB
 
 `endif

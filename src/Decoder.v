@@ -38,7 +38,10 @@ module Decoder(
             endcase
             5'b11000: operator_group = `GROUP_SFLAG;
             5'b11001: operator_group = `GROUP_UFLAG;
-            5'b11011: operator_group = `GROUP_SPECIAL;
+            5'b11011: casez(word[15:13])
+                3'b111: operator_group = `GROUP_SPECIAL_LONG;
+                default: operator_group = `GROUP_SPECIAL;
+            endcase
         endcase
 
 endmodule

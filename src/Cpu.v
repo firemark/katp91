@@ -17,11 +17,12 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
         CYCLE_1 = 1,
         CYCLE_2 = 2,
         CYCLE_3 = 3,
-        CYCLE_4 = 4;
+        CYCLE_4 = 4,
+        CYCLE_5 = 5;
     reg [3:0] cycle  /*verilator public*/;
     
     reg [7:0] flags;
-    reg [15:0] pc_register, sp_register, data_register;
+    reg [15:0] pc_register, sp_register, data_register, tmp_register;
     assign data_bus = w? data_register : 16'bz;
         
     reg [15:0] word;
@@ -98,6 +99,7 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
         casez({cycle, operator_group})
             {CYCLE_3, `GROUP_WRRMATH_MEM}: w = operator[2];
             {CYCLE_3, `GROUP_WRSMATH_STACK}: w = operator == `OP_PUSH;
+            {CYCLE_5, `GROUP_SPECIAL_LONG}: w = operator == `OP_CALL;
             default: w = 1'b0;
         endcase
     
@@ -122,10 +124,10 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
             {CYCLE_0, 4'b????}: begin
                 cs_write_registers <= 2'b00;
                 address_bus <= pc_register;
-                pc_register <= pc_register + 1;
             end
             {CYCLE_1, 4'b????}: begin
                 cs_write_registers <= 2'b00;
+                pc_register <= pc_register + 1;
                 word <= data_bus;
             end
             {CYCLE_2, `GROUP_WRRMATH}: begin
@@ -168,6 +170,35 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                 case (operator)
                     `OP_POP: begin
                         register_in <= data_bus;
+                    end
+                endcase
+            end
+            {CYCLE_2, `GROUP_SPECIAL_LONG}: begin
+                address_bus <= pc_register;
+            end
+            {CYCLE_3, `GROUP_SPECIAL_LONG}: begin
+                case (operator)
+                    `OP_JMP: begin
+                        pc_register <= data_bus;
+                    end
+                    `OP_CALL: begin
+                        tmp_register <= data_bus;
+                    end
+                endcase
+            end
+            {CYCLE_4, `GROUP_SPECIAL_LONG}: begin
+                case (operator)
+                    `OP_CALL: begin
+                        data_register <= pc_register;
+                        sp_register <= sp_register - 1;
+                        address_bus <= sp_register;
+                    end
+                endcase
+            end
+            {CYCLE_5, `GROUP_SPECIAL_LONG}: begin
+                case (operator)
+                    `OP_CALL: begin
+                        pc_register <= tmp_register;
                     end
                 endcase
             end
