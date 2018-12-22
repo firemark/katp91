@@ -92,6 +92,7 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
             {CYCLE_1, 4'b????}: r = 1'b1;
             {CYCLE_3, `GROUP_WRRMATH_MEM}: r = operator[2];
             {CYCLE_3, `GROUP_WRSMATH_STACK}: r = operator == `OP_POP;
+            {CYCLE_3, `GROUP_SPECIAL}: r = operator == `OP_RET;
             default: r = 1'b0;
         endcase
         
@@ -199,6 +200,21 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                 case (operator)
                     `OP_CALL: begin
                         pc_register <= tmp_register;
+                    end
+                endcase
+            end
+            {CYCLE_2, `GROUP_SPECIAL}: begin
+                case (operator)
+                    `OP_RET: begin
+                        sp_register <= sp_register + 1;
+                        address_bus <= sp_register + 1;
+                    end
+                endcase
+            end
+            {CYCLE_3, `GROUP_SPECIAL}: begin
+                case (operator)
+                    `OP_RET: begin
+                        pc_register <= data_bus;
                     end
                 endcase
             end

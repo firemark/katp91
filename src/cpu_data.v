@@ -54,6 +54,10 @@
 `define OP_JMP 4'b1110
 `define OP_CALL 4'b1111
 
+// Special operators
+`define OP_NOP 4'b0000
+`define OP_RET 4'b0001
+
 // Other operators
 `define OP_CLC 4'b0000
 `define OP_CLZ 4'b0001
@@ -63,8 +67,7 @@
 `define OP_STZ 4'b1001
 `define OP_STO 4'b1010
 `define OP_STN 4'b1011
-`define OP_NOP 4'b1100
-`define OP_RET 4'b1110
+
 `define OP_HLT 4'b1111
 
 // Operator groups
