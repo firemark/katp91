@@ -44,7 +44,7 @@ long_opcodes = {
     'CALL': 0b1111,
 }
 
-branch_opcodes.update(extended_opcodes)
+branch_opcodes.update(long_opcodes)
 
 math_opcodes16 = math_opcodes.copy()
 math_opcodes16.update({
@@ -65,6 +65,8 @@ single_reg_opcodes = {
     'ROR': 0b0101,
     'RLC': 0b0110,
     'RRC': 0b0111,
+    'INC': 0b1000,
+    'DEC': 0b1001,
 }
 
 single_reg_opcodes16 = single_reg_opcodes.copy()
@@ -74,20 +76,20 @@ single_reg_opcodes16.update({
 })
 
 
-
 def f_join(*args):
     return '^%s$' % r'\s+'.join(args)
 
 
 FOP = r'(?P<op>\w+)'
-FVAL = r'(?P<val>0x[0-9A-F]+|[0-9]+)$'
-FRX_16 = r'R(?P<x>[A-D]X)'
-FRY_16 = r'R(?P<y>[A-D]X)'
-FRX_8 = r'R(?P<x>[A-D][HL])'
-FRY_8 = r'R(?P<y>[A-D][HL])'
-FLABEL = r'(?P<label>\w+)'
-FFLAGS = r'(?P<flags>\w+)'
+FVAL = r'(?P<val>0x[0-9A-F]+|[0-9]+|@[A-Z][\w@]+)'
+FRX_16 = r'(?P<x>[A-D]X)'
+FRY_16 = r'(?P<y>[A-D]X)'
+FRX_8 = r'(?P<x>[A-D][HL])'
+FRY_8 = r'(?P<y>[A-D][HL])'
+FLABEL = r'(?P<label>[.A-Z_][A-Z0-9_]+)'
+FFLAGS = r'(?P<flags>[A-Z]+)'
 raw_asm_formats = [
+    ('DB', f_join('DB', FVAL)),
     ('CRVMATH', f_join(FOP, FRX_8, FVAL)),
     ('CRRMATH', f_join(FOP, FRX_8, FRY_8)),
     ('CRSMATH', f_join(FOP, FRX_8)),
@@ -106,16 +108,16 @@ asm_formats = [
 ]
 
 asm_format_lengths = {
-    'CRVMATH': 2,
-    'CRRMATH': 2,
-    'CRSMATH': 2,
-    'WRRMATH': 2,
-    'WRSMATH': 2,
-    'SFLAG': 2,
-    'UFLAG': 2,
-    'BRANCH': 2,
-    'LONG': 4,
-    'OTHER': 2,
+    'CRVMATH': 1,
+    'CRRMATH': 1,
+    'CRSMATH': 1,
+    'WRRMATH': 1,
+    'WRSMATH': 1,
+    'SFLAG': 1,
+    'UFLAG': 1,
+    'BRANCH': 1,
+    'LONG': 2,
+    'OTHER': 1,
     'NOTHING': 0,
 }
 
@@ -192,16 +194,22 @@ class LineParser(object):
         self.group = group_name
         self.data = match.groupdict()
 
-    def get_bytes_from_group(self):
+    def get_new_addr_from_group(self, old_addr):
+        if self.label == '.MAIN':
+            return 0x2000
+        if self.label == '.BOOT':
+            return 0x0000
+        if self.label == '.MEM':
+            return 0x0400
         if self.data is None:
-            return 0
+            return old_addr
         group = self.group
         op = self.data.get('op')
         if op is not None and group == 'BRANCH':
-            opcode = self.get_opcode(op, extended_opcodes, raise_error=False)
+            opcode = self.get_opcode(op, long_opcodes, raise_error=False)
             if opcode is not None:
                 group = 'LONG'
-        return asm_format_lengths.get(group, 0)
+        return asm_format_lengths.get(group, 0) + old_addr
 
     def to_bytecode(self):
         method = getattr(self, 'group_%s' % self.group.lower(), None)
@@ -219,11 +227,30 @@ class LineParser(object):
     def group_crvmath(self, op, x, val):
         opcode = self.get_opcode(op, math_opcodes)
         rx = reg8_to_int(x)
+        if val.startswith('@'):
+            if val.startswith('@low@'):
+                label = val[5:]
+                val = self.labels.get(label.upper())
+                if val is None:
+                    self.raise_error('Label %s is unknown' % label)
+            elif val.startswith('@high@'):
+                label = val[6:]
+                val = self.labels.get(label.upper())
+                if val is None:
+                    self.raise_error('Label %s is unknown' % label)
+                val = val >> 8
+            else:
+                self.raise_error('unknown macro: %s' % val)
+        u2 = self.val_to_u2(val, 8)
         return [
-            conv_to_word([1, 0b0], [3, rx], [8, val], [4, opcode])
+            conv_to_word([1, 0b0], [3, rx], [8, u2], [4, opcode])
         ]
 
-    def group_crrmath(self, op, x, y, val):
+    def group_db(self, val):
+        u2 = self.val_to_u2(val, 16)
+        return [u2]
+
+    def group_crrmath(self, op, x, y):
         opcode = self.get_opcode(op, math_opcodes)
         rx = reg8_to_int(x)
         ry = reg8_to_int(y)
@@ -231,26 +258,26 @@ class LineParser(object):
             conv_to_word([5, 0b00111], [3, rx], [3, ry], [1, 0], [4, opcode])
         ]
 
-    def group_crsmath(self, op, x, val):
+    def group_crsmath(self, op, x):
         opcode = self.get_opcode(op, single_reg_opcodes)
         rx = reg8_to_int(x)
         return [
             conv_to_word([5, 0b01111], [3, rx], [4, 0], [4, opcode])
         ]
 
-    def group_wrrmath(self, op, x, y, val):
+    def group_wrrmath(self, op, x, y):
         opcode = self.get_opcode(op, math_opcodes16)
-        rx = reg16_to_int(x)
-        ry = reg16_to_int(y)
+        rx = reg16_to_int(x[0])
+        ry = reg16_to_int(y[0])
         return [
             conv_to_word([5, 0b10111], [2, rx], [1, 0], [2, ry], [2, 0], [4, opcode])
         ]
 
-    def group_wrsmath(self, op, x, val):
+    def group_wrsmath(self, op, x):
         opcode = self.get_opcode(op, single_reg_opcodes16)
-        rx = reg16_to_int(x)
+        rx = reg16_to_int(x[0])
         return [
-            conv_to_word([5, 0b11111], [2, rx], [5, 0] [4, opcode])
+            conv_to_word([5, 0b11111], [2, rx], [5, 0], [4, opcode])
         ]
 
     def group_sflag(self, flags):
@@ -351,13 +378,13 @@ def parse_to_bytecode(data):
     )
     lines = [
         LineParser(line, num)
-        for num, line in enumerate(striped_lines)
+        for num, line in enumerate(striped_lines, start=1)
     ]
-    addr = 0x2000
+    addr = 0x0000
     for line_parser in lines:
         line_parser.safe_set_group_and_label(errs)
         line_parser.addr = addr
-        addr += line_parser.get_bytes_from_group()
+        addr = line_parser.get_new_addr_from_group(addr)
     labels = {
         line_parser.label: line_parser.addr 
         for line_parser in lines
@@ -366,12 +393,16 @@ def parse_to_bytecode(data):
     for line_parser in lines:
         line_parser.labels = labels
     shout_errors(errs)
-    
-    bytecode = list(chain.from_iterable(
-        line_parser.safe_to_bytecode(errs)
-        for line_parser in lines
-    ))
+
+    last_addr = max(line.addr for line in lines)
+    bytecode = [0] * (last_addr + 1)
+    for line_parser in lines:
+        bytecode_list = line_parser.safe_to_bytecode(errs)
+        size = len(bytecode_list)
+        addr = line_parser.addr
+        bytecode[addr:addr + size] = bytecode_list
     shout_errors(errs)
+
     return bytecode
 
 
@@ -388,6 +419,10 @@ if __name__ == '__main__':
     else:
         data = sys.stdin.read()
     bytecode = parse_to_bytecode(data)
-    sys.stdout.buffer.write(bytes(bytecode))
+    write = sys.stdout.buffer.write
+    for word in bytecode: # ironic :/
+        lbyte = word & 0xFF
+        hbyte = (word >> 8) & 0xFF
+        write(bytes([lbyte, hbyte]))
     #sys.stdout.write(',\n'.join( hex(b) for b in bytecode ))
 
