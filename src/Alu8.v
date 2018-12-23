@@ -36,6 +36,8 @@ module Alu8(clk, single, value1, value2, operator, bus_out, alu_flags, old_carry
                 `OP_ROR: bus_out = {value1[0], value1[7:1]};
                 `OP_RLC: {carry, bus_out} = {value1, old_carry};
                 `OP_RRC: {bus_out, carry} = {old_carry, value1};
+                `OP_INC: {carry, bus_out} = {1'b0, value1} + {1'b0, 8'h01};
+                `OP_DEC: {carry, bus_out} = {1'b0, value1} - {1'b0, 8'h01};
                 default: bus_out = 8'h0;
             endcase
         overflow = value1[7] ^ bus_out[7];

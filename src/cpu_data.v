@@ -43,6 +43,8 @@
 `define OP_ROR 4'b0101
 `define OP_RLC 4'b0110
 `define OP_RRC 4'b0111
+`define OP_INC 4'b1000
+`define OP_DEC 4'b1001
 
 // Stack operators (Single operators for 16bit)
 `define OP_PUSH 4'b1110
