@@ -2,7 +2,8 @@
 import re
 import sys
 from itertools import chain
-from functools import wraps, reduce 
+from functools import wraps
+
 math_opcodes = {
     'ADD': 0b0000,
     'ADC': 0b0001,
@@ -10,23 +11,15 @@ math_opcodes = {
     'SBC': 0b0011,
     'AND': 0b0100,
     'OR': 0b0110,
-    'XOR': 0b1000,
-    'MOV': 0b1010,
-    'CMP': 0b1100,
+    'XOR': 0b0111,
+    'MOV': 0b1011,
+    'CMP': 0b1111,
 }
 
 other_opcodes = {
-    'CLC': 0b0000,
-    'CLZ': 0b0001,
-    'CLO': 0b0010,
-    'CLN': 0b0011,
-    'STC': 0b1000,
-    'STZ': 0b1001,
-    'STO': 0b1010,
-    'STN': 0b1011,
-    'NOP': 0b1100,
-    'RET': 0b1110,
-    'HLT': 0b1111,
+    'NOP': 0b0000,
+    'RET': 0b0001,
+    'HLT': 0b0111,
 }
 
 branch_opcodes = {
@@ -34,34 +27,36 @@ branch_opcodes = {
     'BRNE': 0b0001,
     'BRLT': 0b0010,
     'BRGE': 0b0011,
-    'BRC': 0b00100,
+    'BRC': 0b0100,
     'BRO': 0b0101,
     'BRN': 0b0110,
     'BRNC': 0b0111,
     'BRNO': 0b1000,
     'BRNN': 0b1001,
-    'BRLO': 0b1010,
-    'BRSH': 0b1011,
+    'BRLO': 0b0100,
+    'BRSH': 0b0111,
     'RJMP': 0b1100,
+    'RCALL': 0b1101,
 }
 
-extended_opcodes = {
-    'JMP': 0b0000,
-    'CALL': 0b0001,
+long_opcodes = {
+    'JMP': 0b1110,
+    'CALL': 0b1111,
 }
 
 branch_opcodes.update(extended_opcodes)
 
-reg_memory_opcodes = {
-    'LD': 0b000,
-    'LDI': 0b001,
-    'LDD': 0b010,
-    'ST': 0b100,
-    'STI': 0b101,
-    'STD': 0b110,
-}
+math_opcodes16 = math_opcodes.copy()
+math_opcodes16.update({
+    'LD': 0b1000,
+    'LDI': 0b1001,
+    'LDD': 0b1010,
+    'ST': 0b1100,
+    'STI': 0b1101,
+    'STD': 0b1110,
+})
 
-simple_reg_opcodes = {
+single_reg_opcodes = {
     'NEG': 0b0000,
     'COM': 0b0001,
     'LSL': 0b0010,
@@ -70,18 +65,38 @@ simple_reg_opcodes = {
     'ROR': 0b0101,
     'RLC': 0b0110,
     'RRC': 0b0111,
-    'PUSH': 0b1000,
-    'POP': 0b1001,
 }
 
+single_reg_opcodes16 = single_reg_opcodes.copy()
+single_reg_opcodes16.update({
+    'PUSH': 0b1110,
+    'POP': 0b1111,
+})
+
+
+
+def f_join(*args):
+    return '^%s$' % r'\s+'.join(args)
+
+
+FOP = r'(?P<op>\w+)'
+FVAL = r'(?P<val>0x[0-9A-F]+|[0-9]+)$'
+FRX_16 = r'R(?P<x>[A-D]X)'
+FRY_16 = r'R(?P<y>[A-D]X)'
+FRX_8 = r'R(?P<x>[A-D][HL])'
+FRY_8 = r'R(?P<y>[A-D][HL])'
+FLABEL = r'(?P<label>\w+)'
+FFLAGS = r'(?P<flags>\w+)'
 raw_asm_formats = [
-    ('MATH_CONST', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])\s+(?P<val>0x[0-9A-F]+|[0-9]+)$'),
-    ('MATH_REG', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])\s+R(?P<y>[0-9A-F]+)$'),
-    ('MATH_EREG', r'^(?P<op>\w+)\s+ER(?P<x>\d)\s+ER(?P<y>\d+)$'),
-    ('REG_MEMORY', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])\s+ER(?P<y>\d+)$'),
-    ('SIMPLE_REG', r'^(?P<op>\w+)\s+R(?P<x>[0-9A-F])$'),
-    ('BRANCH', r'^(?P<op>\w+)\s+(?P<label>\w+)$'),
-    ('OTHER', r'^(?P<op>\w+)$'),
+    ('CRVMATH', f_join(FOP, FRX_8, FVAL)),
+    ('CRRMATH', f_join(FOP, FRX_8, FRY_8)),
+    ('CRSMATH', f_join(FOP, FRX_8)),
+    ('WRRMATH', f_join(FOP, FRX_16, FRY_16)),
+    ('WRSMATH', f_join(FOP, FRX_16)),
+    ('SFLAG', f_join('SFLAG', FFLAGS)),
+    ('UFLAG', f_join('UFLAG', FFLAGS)),
+    ('BRANCH', f_join(FOP, FLABEL)),  # OR LONG - determited by opcodes
+    ('OTHER', f_join(FOP)),
     ('NOTHING', r'^$'),
 ]
 
@@ -91,13 +106,15 @@ asm_formats = [
 ]
 
 asm_format_lengths = {
-    'MATH_CONST': 2,
-    'MATH_REG': 2,
-    'MATH_EREG': 2,
-    'SIMPLE_REG': 2,
-    'REG_MEMORY': 2,
+    'CRVMATH': 2,
+    'CRRMATH': 2,
+    'CRSMATH': 2,
+    'WRRMATH': 2,
+    'WRSMATH': 2,
+    'SFLAG': 2,
+    'UFLAG': 2,
     'BRANCH': 2,
-    'EXTENDED': 4,
+    'LONG': 4,
     'OTHER': 2,
     'NOTHING': 0,
 }
@@ -120,6 +137,27 @@ def line_parse_safe(func):
             return []
     inner.__name__ = 'safe_%s' % inner.__name__
     return inner
+
+
+
+def reg16_to_int(val):
+    return ord(val.upper()) - ord('A')
+
+
+def reg8_to_int(val):
+    reg16 = reg16_to_int(val[0])
+    high_or_low = int(val[1].upper() == 'H')
+    return (reg16 << 1) | high_or_low
+
+
+def conv_to_word(*items):
+    word = 0
+    i = 0
+    for size, value in items:
+        word |= value << i
+        i += size
+    assert i == 16
+    return word
 
 
 class LineParser(object):
@@ -162,7 +200,7 @@ class LineParser(object):
         if op is not None and group == 'BRANCH':
             opcode = self.get_opcode(op, extended_opcodes, raise_error=False)
             if opcode is not None:
-                group = 'EXTENDED'
+                group = 'LONG'
         return asm_format_lengths.get(group, 0)
 
     def to_bytecode(self):
@@ -178,84 +216,86 @@ class LineParser(object):
     safe_set_group_and_label = line_parse_safe(set_group_and_label)
     safe_to_bytecode = line_parse_safe(to_bytecode)
 
-    def group_math_const(self, op, x, val):
+    def group_crvmath(self, op, x, val):
         opcode = self.get_opcode(op, math_opcodes)
+        rx = reg8_to_int(x)
         return [
-            (int(x, 16) << 4) + opcode,
-            self.val_to_u2(val),
-        ]  
+            conv_to_word([1, 0b0], [3, rx], [8, val], [4, opcode])
+        ]
+
+    def group_crrmath(self, op, x, y, val):
+        opcode = self.get_opcode(op, math_opcodes)
+        rx = reg8_to_int(x)
+        ry = reg8_to_int(y)
+        return [
+            conv_to_word([5, 0b00111], [3, rx], [3, ry], [1, 0], [4, opcode])
+        ]
+
+    def group_crsmath(self, op, x, val):
+        opcode = self.get_opcode(op, single_reg_opcodes)
+        rx = reg8_to_int(x)
+        return [
+            conv_to_word([5, 0b01111], [3, rx], [4, 0], [4, opcode])
+        ]
+
+    def group_wrrmath(self, op, x, y, val):
+        opcode = self.get_opcode(op, math_opcodes16)
+        rx = reg16_to_int(x)
+        ry = reg16_to_int(y)
+        return [
+            conv_to_word([5, 0b10111], [2, rx], [1, 0], [2, ry], [2, 0], [4, opcode])
+        ]
+
+    def group_wrsmath(self, op, x, val):
+        opcode = self.get_opcode(op, single_reg_opcodes16)
+        rx = reg16_to_int(x)
+        return [
+            conv_to_word([5, 0b11111], [2, rx], [5, 0] [4, opcode])
+        ]
+
+    def group_sflag(self, flags):
+        bitmask = self.get_flags(flags)
+        return [
+            conf_to_word([5, 0b00011], [3, 0], [8, bitmask]),
+        ]
+
+    def group_uflag(self, flags):
+        bitmask = self.get_flags(flags)
+        return [
+            conf_to_word([5, 0b10011], [3, 0], [8, bitmask]),
+        ]
 
     def group_branch(self, op, label):
-        byte_list = self.group_extended(op, label)
+        byte_list = self.group_long(op, label)
         if byte_list is not None:
             return byte_list
         opcode = self.get_opcode(op, branch_opcodes)
-        val = self.labels.get(label.upper())
-        if val is None:
+        address = self.labels.get(label.upper())
+        if address is None:
             self.raise_error('Label %s is unknown' % label)
-        distance = val - self.addr
-        u2 = self.val_to_u2(distance, 9)
+        distance = address - self.addr
+        u2 = self.val_to_u2(distance, 10)
         return [
-            0b11 + (opcode << 3) + ((u2 & 0b1) << 7),
-            (u2 >> 1) & 0b11111111
+            conv_to_word([2, 0b01], [10, u2], [4, opcode])
         ]
 
-    def group_math_reg(self, op, x, y):
-        opcode = self.get_opcode(op, math_opcodes)
-        return [
-            (opcode << 4) + 0b111,
-            (int(y, 16) << 4) + int(x, 16),
-        ]
-
-    def group_math_ereg(self, op, x, y):
-        ix = int(x)
-        if ix > 3:
-            self.raise_error('register ER%s is unknown' % x)
-        iy = int(y)
-        if iy > 3:
-            self.raise_error('register ER%s is unknown' % y)
-        opcode = self.get_opcode(op, math_opcodes)
-        return [
-            ((opcode & 0b111) << 5) + 0b1111,
-            ((opcode & 0b1000) >> 3) + (ix << 1) + (iy << 3)
-        ]
-
-    def group_reg_memory(self, op, x, y):
-        ix = int(x, 16)
-        iy = int(y)
-        if iy > 3:
-            self.raise_error('register ER%s is unknown' % y)
-        opcode = self.get_opcode(op, reg_memory_opcodes)
-        return [
-            ((opcode & 0b1) << 7) + 0b111111,
-            (opcode >> 1) + (ix << 2) + (iy << 6)
-        ]
-    
-    def group_simple_reg(self, op, x):
-        opcode = self.get_opcode(op, simple_reg_opcodes)
-        ix = int(x, 16)
-        return [
-            ((opcode & 0b11) << 6) + 0b11111,
-            (opcode >> 2) + (ix << 2),
-        ]
-
-    def group_extended(self, op, label):
-        opcode = self.get_opcode(op, extended_opcodes, raise_error=False)
+    def group_long(self, op, label):
+        opcode = self.get_opcode(op, long_opcodes, raise_error=False)
         if opcode is None:
             return None
-        val = self.labels.get(label.upper())
-        if val is None:
+        address = self.labels.get(label.upper())
+        if address is None:
             self.raise_error('Label %s is unknown' % label)
         return [
-            0b1111111,
-            opcode,
-            val & 0xFF,
-            (val >> 8) & 0xFF,
+            conv_to_word([5, 0b11011], [7, 0], [4, opcode]),
+            address,
         ]
 
     def group_other(self, op):
         opcode = self.get_opcode(op, other_opcodes)
-        return [0b11111111, opcode]
+        return [
+            conv_to_word([5, 0b11011], [7, 0], [4, opcode]),
+        ]
 
     def group_nothing(self):
         return []
@@ -286,7 +326,23 @@ class LineParser(object):
                 )
             )
         return opcode
-        
+
+    FLAG_TO_BITMASK = {
+        'I': 1 << 4,
+        'C': 1 << 3,  # carry
+        'O': 1 << 2,  # overflow
+        'Z': 1 << 1,  # zero
+        'N': 1 << 0,  # negative
+    }
+    def get_flags(self, flags):
+        flags = flags.upper()
+        bitmask = 0
+        for flag in flags:
+            flag_bitmask = self.FLAG_TO_BITMASK.get(flag)
+            if not flag_bitmask:
+                self.raise_error('%r flag is unknown' % flag)
+            bitmask |= flag_bitmask
+        return bitmask
 
 def parse_to_bytecode(data):
     errs = []

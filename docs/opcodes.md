@@ -27,7 +27,7 @@ A - operation
 X - number of 16bit register
 
 Register-Register 16bit operation
-WRRMATH   .1111.1XX-.YY--.AAAA.
+WRRMATH   .1110.1XX-.YY--.AAAA.
           0    4    8   12   16
 A - operation
 X - number of first 16bit register
@@ -51,5 +51,6 @@ F - bit of flag
 
 Special operation
 SPECIAL   .1101.1---.----.AAAA.
+          0    4    8   12   16
 A - operation
 ```
