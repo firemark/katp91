@@ -20,13 +20,12 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
         CYCLE_4 = 4,
         CYCLE_5 = 5;
     reg [3:0] cycle  /*verilator public*/;
-    
-    reg [7:0] flags;
+
     reg [15:0] pc_register, sp_register, data_register, tmp_register;
     assign data_bus = w? data_register : 16'bz;
-        
+
     reg [15:0] word;
-    wire [7:0] val;
+    wire [7:0] val, decoder_flags;
     wire [3:0] operator;
     wire [3:0] operator_group;
     wire [2:0] num_rgv, num_rg1, num_rg2;
@@ -37,10 +36,19 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
         .operator(operator),
         .rgv(num_rgv),
         .val(val),
+        .flags(decoder_flags),
         .rg1(num_rg1),
         .rg2(num_rg2),
         .relative_addr(relative_addr));
-    
+
+    reg [7:0] flags;
+    wire is_checked;
+    CheckBranch check_branch(
+        .operator(operator),
+        .flags(flags),
+        .is_checked(is_checked)
+    );
+
     reg [1:0] cs_write_registers;
     reg [15:0] register_in;
     wire [15:0] register_out [0:1];
@@ -53,11 +61,10 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
         .bus_out1(register_out[0]),
         .bus_out2(register_out[1])
     );
-    
-    wire check_branch;
+
     wire [15:0] alu_out;
-    wire [5:0] alu_flags;
-    
+    wire [4:0] alu_flags;
+
     reg [15:0] alu_in [0:1];
     Alu alu(
         .clk(clk),
@@ -66,9 +73,8 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
         .value2(alu_in[1]),
         .operator(operator),
         .bus_out(alu_out),
-        .alu_flags(alu_flags),
-        .check_branch(check_branch));
-    
+        .alu_flags(alu_flags));
+
     initial begin
         halt = 0;
         cycle = CYCLE_0;
@@ -83,8 +89,9 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
             CYCLE_0: cycle <= CYCLE_1;
             CYCLE_1: cycle <= CYCLE_2;
             CYCLE_2: cycle <= CYCLE_3;
-            CYCLE_3: cycle <= CYCLE_0;
-            CYCLE_4: cycle <= CYCLE_0;
+            CYCLE_3: cycle <= operator_group == `GROUP_SPECIAL_LONG && operator == `OP_CALL? CYCLE_4 : CYCLE_0;
+            CYCLE_4: cycle <= CYCLE_5;
+            CYCLE_5: cycle <= CYCLE_0;
         endcase 
         
     always @ (cycle or operator_group or operator)
@@ -110,6 +117,7 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
             pc_register <= 16'h0000;
             sp_register <= 16'h07FF;
             cs_write_registers <= 2'b00;
+            flags <= 8'h0;
         end else casez ({cycle, operator_group})
             {CYCLE_0, `GROUP_WRRMATH_MEM}: begin
                 if (operator[1]) begin
@@ -131,6 +139,19 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                 pc_register <= pc_register + 1;
                 word <= data_bus;
             end
+            {CYCLE_2, `GROUP_RJMP}: begin
+                if (is_checked)
+                    pc_register <= (
+                        pc_register
+                        + {{7{relative_addr[9]}}, relative_addr[8:0]}
+                    );
+            end
+            {CYCLE_2, `GROUP_SFLAG}: begin
+                flags <= flags | decoder_flags;
+            end
+            {CYCLE_2, `GROUP_UFLAG}: begin
+                flags <= flags & ~decoder_flags;
+            end
             {CYCLE_2, `GROUP_WRRMATH}: begin
                 alu_in[0] <= register_out[0];
                 alu_in[1] <= register_out[1];
@@ -147,6 +168,9 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                 if (operator[2])
                     data_register <= register_out[0];
                 address_bus <= register_out[1];
+            end
+            {CYCLE_2, `GROUP_WRSMATH}: begin
+                alu_in[0] <= register_out[0];
             end
             {CYCLE_3, `GROUP_WRRMATH_MEM}: begin
                 if (!operator[2]) begin

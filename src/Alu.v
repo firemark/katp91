@@ -1,14 +1,13 @@
 `include "cpu_data.v"
 
-module Alu(clk, single, value1, value2, operator, bus_out, alu_flags, check_branch);
+module Alu(clk, single, value1, value2, operator, bus_out, alu_flags);
     input clk;
     input single;
-    output reg check_branch;
     input [15:0] value1, value2;
     input [3:0] operator;
 
     reg old_sign, carry, overflow, zero, negative;
-    output alu_flags;
+    output [4:0] alu_flags;
     output reg [15:0] bus_out;
     
     assign alu_flags = {old_sign, carry, overflow, zero, negative};
@@ -44,21 +43,5 @@ module Alu(clk, single, value1, value2, operator, bus_out, alu_flags, check_bran
         negative = bus_out[15];
     end
         
-    always @(operator or zero or negative or overflow or carry)
-        case (operator)
-            `OP_BREQ: check_branch = zero;
-            `OP_BRNE: check_branch = ~zero;
-            `OP_BRLT: check_branch = negative ^ overflow;
-            `OP_BRGE: check_branch = ~(negative ^ overflow);
-            `OP_BRC: check_branch = carry;
-            `OP_BRNC: check_branch = ~carry;
-            `OP_BRO: check_branch = overflow;
-            `OP_BRNO: check_branch = ~overflow;
-            `OP_BRN: check_branch = negative;
-            `OP_BRNN: check_branch = ~negative;
-            `OP_BRLO: check_branch = carry;
-            `OP_BRSH: check_branch = ~carry;
-            `OP_RJMP: check_branch = 1'b1;
-            default: check_branch = 1'b0;
-        endcase
+
 endmodule

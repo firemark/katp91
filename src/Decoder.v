@@ -3,7 +3,7 @@
 module Decoder(
         word, 
         operator_group, operator,
-        rgv, rg1, rg2, val, relative_addr);
+        rgv, rg1, rg2, val, flags, relative_addr);
     input [15:0] word;
     
     output [3:0] operator;
@@ -11,16 +11,18 @@ module Decoder(
     
     output [2:0] rgv, rg1, rg2;
     output [7:0] val;
+    output [7:0] flags;
     output [9:0] relative_addr;
     
     assign rgv = word[3:1];
     assign val = word[11:4];
+    assign flags = word[15:8];
     assign rg1 = word[7:5];
     assign rg2 = word[10:8];
     assign operator = word[15:12];
     assign relative_addr = word[7:0];
     
-    always @ (word)
+    always @*
         casez (word[4:0])
             5'b0????: operator_group = `GROUP_CRVMATH;
             5'b10???: operator_group = `GROUP_RJMP;

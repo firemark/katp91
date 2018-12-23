@@ -31,8 +31,6 @@
 `define OP_BRNC 4'b0111 //not carry
 `define OP_BRNO 4'b1000 //not overflow
 `define OP_BRNN 4'b1001 //not negative
-`define OP_BRLO 4'b1010 //lower
-`define OP_BRSH 4'b1011 //same and higher
 `define OP_RJMP 4'b1100 //restricted jump
 `define OP_RCALL 4'b1101 //restricted call
 
@@ -57,18 +55,7 @@
 // Special operators
 `define OP_NOP 4'b0000
 `define OP_RET 4'b0001
-
-// Other operators
-`define OP_CLC 4'b0000
-`define OP_CLZ 4'b0001
-`define OP_CLO 4'b0010
-`define OP_CLN 4'b0011
-`define OP_STC 4'b1000
-`define OP_STZ 4'b1001
-`define OP_STO 4'b1010
-`define OP_STN 4'b1011
-
-`define OP_HLT 4'b1111
+`define OP_HLT 4'b0111
 
 // Operator groups
 `define GROUP_CRVMATH 4'h0
