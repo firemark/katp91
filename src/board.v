@@ -13,9 +13,9 @@ module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments,
     wire write, read;
     
     //diodes
-    output [7:0] led;
+    output [15:0] led;
     wire cs_diodes; assign cs_diodes = address_bus[15:12] == 4'b1001;
-    Diodes diodes(data_bus[7:0], led, cs_diodes, write);
+    Diodes diodes(data_bus, led, cs_diodes, write);
     
     //led counter
     output [2:0] enable_segments;
