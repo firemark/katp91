@@ -163,8 +163,11 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                 alu_in[1] <= 16'h0000;
             end
             {CYCLE_3, `GROUP_WRRMATH}, {CYCLE_3, `GROUP_WRSMATH}: begin
-                register_in[0] <= alu_out;
-                cs_write_registers <= 2'b01;
+                if (operator == `OP_CMP) begin
+                    register_in[0] <= alu_out;
+                    cs_write_registers <= 2'b01;
+                end
+
                 flags[3:0] <= alu_flags;
             end
             {CYCLE_2, `GROUP_CRVMATH}, {CYCLE_2, `GROUP_CRSMATH}: begin
@@ -176,12 +179,14 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                 alu_in[1] <= {8'h00, num_rg2[0] ? register_out[1][15:8] : register_out[1][7:0]};
             end
             {CYCLE_3, `GROUP_CRRMATH}, {CYCLE_3, `GROUP_CRSMATH}, {CYCLE_3, `GROUP_CRVMATH}: begin
-                register_in[0] <= (
-                    num_rg1[0]
-                    ? {register_out[0][15:8], alu_out[7:0]}
-                    : {alu_out[15:8], register_out[0][7:0]}
-                );
-                cs_write_registers <= 2'b01;
+                if (operator == `OP_CMP) begin
+                    register_in[0] <= (
+                        num_rg1[0]
+                        ? {register_out[0][15:8], alu_out[7:0]}
+                        : {alu_out[15:8], register_out[0][7:0]}
+                    );
+                    cs_write_registers <= 2'b01;
+                end
                 flags[3:0] <= alu_flags8;
             end
             {CYCLE_2, `GROUP_WRRMATH_MEM}: begin
