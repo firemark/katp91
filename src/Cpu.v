@@ -1,6 +1,5 @@
 `include "cpu_data.v"
-
-`define CS_ON(x) (|(cs & x))
+`define REGISTER_SIDE(r, n) {8'h00, n[0]? r[15:8] : r[7:0]}
 
 module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     input clk /*verilator clocker*/;
@@ -28,13 +27,13 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     wire [7:0] val, decoder_flags;
     wire [3:0] operator;
     wire [3:0] operator_group;
-    wire [2:0] num_rgv, num_rg1, num_rg2;
+    wire [2:0] num_rg1, num_rg2;
     wire [9:0] relative_addr;
+
     Decoder decoder(
         .word(word),
         .operator_group(operator_group),
         .operator(operator),
-        .rgv(num_rgv),
         .val(val),
         .flags(decoder_flags),
         .rg1(num_rg1),
@@ -63,8 +62,8 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     );
 
     wire [15:0] alu_out;
-    wire [4:0] alu_flags;
-
+    wire [3:0] alu_flags, alu_flags8;
+    wire old_carry; assign old_carry = flags[3];
     reg [15:0] alu_in [0:1];
     Alu alu(
         .clk(clk),
@@ -73,7 +72,9 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
         .value2(alu_in[1]),
         .operator(operator),
         .bus_out(alu_out),
-        .alu_flags(alu_flags));
+        .alu_flags(alu_flags),
+        .alu_flags8(alu_flags8),
+        .old_carry(old_carry));
 
     initial begin
         halt = 0;
@@ -92,6 +93,7 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
             CYCLE_3: cycle <= operator_group == `GROUP_SPECIAL_LONG && operator == `OP_CALL? CYCLE_4 : CYCLE_0;
             CYCLE_4: cycle <= CYCLE_5;
             CYCLE_5: cycle <= CYCLE_0;
+            default: cycle <= CYCLE_0;
         endcase 
         
     always @ (cycle or operator_group or operator)
@@ -158,11 +160,29 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
             end
             {CYCLE_2, `GROUP_WRSMATH}: begin
                 alu_in[0] <= register_out[0];
+                alu_in[1] <= 16'h0000;
             end
             {CYCLE_3, `GROUP_WRRMATH}, {CYCLE_3, `GROUP_WRSMATH}: begin
                 register_in[0] <= alu_out;
                 cs_write_registers <= 2'b01;
-                flags[5:0] <= alu_flags;
+                flags[3:0] <= alu_flags;
+            end
+            {CYCLE_2, `GROUP_CRVMATH}, {CYCLE_2, `GROUP_CRSMATH}: begin
+                alu_in[0] <= {8'h00, num_rg1[0] ? register_out[0][15:8] : register_out[0][7:0]};
+                alu_in[1] <= {8'h00, val}; // for single this code is not affected
+            end
+            {CYCLE_2, `GROUP_CRRMATH}: begin
+                alu_in[0] <= {8'h00, num_rg1[0] ? register_out[0][15:8] : register_out[0][7:0]};
+                alu_in[1] <= {8'h00, num_rg2[0] ? register_out[1][15:8] : register_out[1][7:0]};
+            end
+            {CYCLE_3, `GROUP_CRRMATH}, {CYCLE_3, `GROUP_CRSMATH}, {CYCLE_3, `GROUP_CRVMATH}: begin
+                register_in[0] <= (
+                    num_rg1[0]
+                    ? {register_out[0][15:8], alu_out[7:0]}
+                    : {alu_out[15:8], register_out[0][7:0]}
+                );
+                cs_write_registers <= 2'b01;
+                flags[3:0] <= alu_flags8;
             end
             {CYCLE_2, `GROUP_WRRMATH_MEM}: begin
                 if (operator[2])

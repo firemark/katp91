@@ -1,47 +1,47 @@
 `include "cpu_data.v"
 
-module Alu(clk, single, value1, value2, operator, bus_out, alu_flags);
+module Alu(clk, single, value1, value2, operator, bus_out, alu_flags, alu_flags8, old_carry);
     input clk;
     input single;
     input [15:0] value1, value2;
     input [3:0] operator;
+    input old_carry;
 
-    reg old_sign, carry, overflow, zero, negative;
-    output [4:0] alu_flags;
-    output reg [15:0] bus_out;
+    output [3:0] alu_flags;
+    output [3:0] alu_flags8;
     
-    assign alu_flags = {old_sign, carry, overflow, zero, negative};
+    wire old_carry_high;
+    wire [3:0] alu_flags_high, alu_flags_low;
     
-    always @(posedge clk) begin
-        old_sign = value1[7];
-        if (!single)
-            case(operator)
-                `OP_ADD: {carry, bus_out} = {1'b0, value1} + {1'b0, value2};
-                `OP_SUB, `OP_CMP: {carry, bus_out} = {1'b0, value1} - {1'b0, value2};
-                `OP_ADC: {carry, bus_out} = {1'b0, value1} + {1'b0, value2} + {15'b0, carry};
-                `OP_SBC: {carry, bus_out} = {1'b0, value1} - {1'b0, value2} - {15'b0, carry};
-                `OP_AND: bus_out = value1 & value2;
-                `OP_OR: bus_out = value1 | value2;
-                `OP_XOR: bus_out = value1 ^ value2;
-                `OP_MOV: bus_out = value2;
-                default: bus_out = 16'hAA;
-            endcase
-        else
-            case (operator)
-                `OP_NEG: bus_out = 16'h00 - value1;
-                `OP_COM: bus_out = 16'hFF - value1;
-                `OP_LSL: {carry, bus_out} = {value1, 1'b0};
-                `OP_LSR: {bus_out, carry} = {1'b0, value1};
-                `OP_ROL: bus_out = {value1[14:0], value1[15]};
-                `OP_ROR: bus_out = {value1[0], value1[15:1]};
-                `OP_RLC: {carry, bus_out} = {value1, carry};
-                `OP_RRC: {bus_out, carry} = {carry, value1};
-                default: bus_out = 16'h00;
-            endcase
-        overflow = old_sign ^ bus_out[15];
-        zero = &bus_out;
-        negative = bus_out[15];
-    end
+    output [15:0] bus_out;
+    
+    assign old_carry_high = alu_flags_low[3];
+    assign alu_flags8 = alu_flags_low;
+    assign alu_flags = {
+        alu_flags_high[3], // carry
+        alu_flags_high[2], // overflow
+        alu_flags_high[1] & alu_flags_low[1], // zero
+        alu_flags_high[0] // negative
+    };
+    
+    Alu8 alu_high(
+        .clk(clk),
+        .single(single),
+        .value1(value1[15:8]),
+        .value2(value2[15:8]),
+        .bus_out(bus_out[15:8]),
+        .operator(operator),
+        .alu_flags(alu_flags_high),
+        .old_carry(old_carry_high));
         
-
+    Alu8 alu_low(
+        .clk(clk),
+        .single(single),
+        .value1(value1[7:0]),
+        .value2(value2[7:0]),
+        .bus_out(bus_out[7:0]),
+        .operator(operator),
+        .alu_flags(alu_flags_low),
+        .old_carry(old_carry));
+        
 endmodule
