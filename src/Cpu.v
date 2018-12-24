@@ -172,12 +172,12 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                 flags[3:0] <= alu_flags;
             end
             {CYCLE_2, `GROUP_CRVMATH}, {CYCLE_2, `GROUP_CRSMATH}: begin
-                alu_in[0] <= {{8{num_rg1[0] ? register_out[0][15] : register_out[0][7]}}, num_rg1[0] ? register_out[0][15:8] : register_out[0][7:0]};
+                alu_in[0] <= {8'h00, num_rg1[0] ? register_out[0][15:8] : register_out[0][7:0]};
                 alu_in[1] <= {{8{val[7]}}, val}; // for single this code is not affected
             end
             {CYCLE_2, `GROUP_CRRMATH}: begin
-                alu_in[0] <= {{8{num_rg1[0] ? register_out[0][15] : register_out[0][7]}}, num_rg1[0] ? register_out[0][15:8] : register_out[0][7:0]};
-                alu_in[1] <= {{8{num_rg2[0] ? register_out[1][15] : register_out[1][7]}}, num_rg2[0] ? register_out[1][15:8] : register_out[1][7:0]};
+                alu_in[0] <= {8'h00, num_rg1[0] ? register_out[0][15:8] : register_out[0][7:0]};
+                alu_in[1] <= {8'h00, num_rg2[0] ? register_out[1][15:8] : register_out[1][7:0]};
             end
             {CYCLE_3, `GROUP_CRRMATH}, {CYCLE_3, `GROUP_CRSMATH}, {CYCLE_3, `GROUP_CRVMATH}: begin
                 if (operator != `OP_CMP) begin

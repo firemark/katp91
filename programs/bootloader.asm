@@ -1,5 +1,5 @@
 .MEM:
-    val: db 0x00FD
+    val: db 0xAAAA
 .BOOT:
     MOV AH @high@val
     MOV AL @low@val
