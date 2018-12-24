@@ -1,5 +1,5 @@
 .MEM:
-    val: db 0x0AA0
+    val: db 0x00FD
 .BOOT:
     MOV AH @high@val
     MOV AL @low@val
@@ -12,9 +12,15 @@ loop:
     ST BX AX
     ST BX DX
     INC BX
+    MOV CH 0
     MOV CL 0
 counter1:
-    INC CL
-    CMP CL 0x20
-    BRNE counter1
+    INC CH 
+    CMP CH 0xFF
+    BRNE counter2
     RJMP loop
+counter2:
+    INC CL
+    CMP CL 0xFF
+    BRNE counter2
+    RJMP counter1

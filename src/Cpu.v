@@ -8,7 +8,7 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     input [7:0] interrupts;
     inout [15:0] data_bus;
     output reg [15:0] address_bus;
-    output reg r, w;
+    output reg r; output w; reg _w;
     output reg halt;
     
     parameter [3:0]
@@ -21,7 +21,8 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     reg [3:0] cycle  /*verilator public*/;
 
     reg [15:0] pc_register, sp_register, data_register, tmp_register;
-    assign data_bus = w? data_register : 16'bz;
+    assign data_bus = _w? data_register : 16'bz;
+    assign w = _w & !clk;
 
     reg [15:0] word;
     wire [7:0] val, decoder_flags;
@@ -66,7 +67,6 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     wire old_carry; assign old_carry = flags[3];
     reg [15:0] alu_in [0:1];
     Alu alu(
-        .clk(clk),
         .single(operator_group == `GROUP_CRSMATH || operator_group == `GROUP_WRSMATH),
         .value1(alu_in[0]),
         .value2(alu_in[1]),
@@ -107,10 +107,10 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
         
     always @ (cycle or operator_group or operator)
         casez({cycle, operator_group})
-            {CYCLE_3, `GROUP_WRRMATH_MEM}: w = operator[2];
-            {CYCLE_3, `GROUP_WRSMATH_STACK}: w = operator == `OP_PUSH;
-            {CYCLE_5, `GROUP_SPECIAL_LONG}: w = operator == `OP_CALL;
-            default: w = 1'b0;
+            {CYCLE_3, `GROUP_WRRMATH_MEM}: _w = operator[2];
+            {CYCLE_3, `GROUP_WRSMATH_STACK}: _w = operator == `OP_PUSH;
+            {CYCLE_5, `GROUP_SPECIAL_LONG}: _w = operator == `OP_CALL;
+            default: _w = 1'b0;
         endcase
     
     always @ (negedge clk)
@@ -172,12 +172,12 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                 flags[3:0] <= alu_flags;
             end
             {CYCLE_2, `GROUP_CRVMATH}, {CYCLE_2, `GROUP_CRSMATH}: begin
-                alu_in[0] <= {8'h00, num_rg1[0] ? register_out[0][15:8] : register_out[0][7:0]};
-                alu_in[1] <= {8'h00, val}; // for single this code is not affected
+                alu_in[0] <= {{8{num_rg1[0] ? register_out[0][15] : register_out[0][7]}}, num_rg1[0] ? register_out[0][15:8] : register_out[0][7:0]};
+                alu_in[1] <= {{8{val[7]}}, val}; // for single this code is not affected
             end
             {CYCLE_2, `GROUP_CRRMATH}: begin
-                alu_in[0] <= {8'h00, num_rg1[0] ? register_out[0][15:8] : register_out[0][7:0]};
-                alu_in[1] <= {8'h00, num_rg2[0] ? register_out[1][15:8] : register_out[1][7:0]};
+                alu_in[0] <= {{8{num_rg1[0] ? register_out[0][15] : register_out[0][7]}}, num_rg1[0] ? register_out[0][15:8] : register_out[0][7:0]};
+                alu_in[1] <= {{8{num_rg2[0] ? register_out[1][15] : register_out[1][7]}}, num_rg2[0] ? register_out[1][15:8] : register_out[1][7:0]};
             end
             {CYCLE_3, `GROUP_CRRMATH}, {CYCLE_3, `GROUP_CRSMATH}, {CYCLE_3, `GROUP_CRVMATH}: begin
                 if (operator != `OP_CMP) begin

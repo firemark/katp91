@@ -4,7 +4,7 @@ module Diodes(data_bus, diodes, enable, write);
     input enable, write;
 
     initial begin 
-        diodes = 8'hFF;
+        diodes = 16'h00;
     end
 
     always @(posedge write)

@@ -37,17 +37,21 @@ module Board(clkin, /*reset,*/ rgb, led, segments, enable_segments, hsync, vsync
     //     .CLKIN_IBUFG_OUT());
     
     //assign clk = clkin;
-
-         
-    reg [3:0] counter;
-    assign clk = &counter;
     
+    reg [3:0] clk_counter;
+    initial clk_counter = 0;
+    assign clk = clk_counter[3];
+    always @ (posedge clkin) begin
+        clk_counter = clk_counter + 1;
+    end
+
+    reg [3:0] counter;
     initial counter = 0;
     //initial led_counter = 0;
     always @ (posedge clk) begin
-        counter <= counter + 1;
+        counter = counter + 1;
         if (&counter) begin
-            reset <= 0;
+            reset = 0;
             //led_counter <= led_counter + 1;
         end
             
