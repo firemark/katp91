@@ -1,11 +1,11 @@
-module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments, hsync, vsync, halt);
+module Board(clkin, /*reset,*/ rgb, led, segments, enable_segments, hsync, vsync);
     input clkin /*verilator clocker*/;
     reg reset;
     initial reset = 1;
 
-    output [2:0] red, green, blue;
+    output [5:0] rgb;
     output hsync, vsync;
-    output halt;
+    wire halt;
     
     wire [15:0] data_bus;
     wire [15:0] address_bus;
@@ -18,12 +18,12 @@ module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments,
     Diodes diodes(data_bus, led, cs_diodes, write);
     
     //led counter
-    output [2:0] enable_segments;
+    output [3:0] enable_segments;
     output [7:0] segments;
     wire cs_led_counter; assign cs_led_counter = address_bus[15:12] == 4'b1010;
     LedCounter led_counter(
         .clk(clk),
-        .data_bus(data_bus[7:0]),
+        .data_bus(data_bus),
         .enable(cs_led_counter),
         .write(write),
         .segments(segments),
@@ -36,10 +36,11 @@ module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments,
 	//	 .CLKFX_OUT(clk),
     //     .CLKIN_IBUFG_OUT());
     
-    assign clk = clkin;
+    //assign clk = clkin;
+
          
     reg [3:0] counter;
-    //reg [7:0] led_counter;
+    assign clk = &counter;
     
     initial counter = 0;
     //initial led_counter = 0;
@@ -55,7 +56,6 @@ module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments,
     //assign led = led_counter;
 
     //gpu
-    wire [7:0] color;
     wire cs_gpu; assign cs_gpu = address_bus[15:12] == 4'b1111;
     Gpu gpu(
         .clk(clk),
@@ -66,10 +66,7 @@ module Board(clkin, /*reset,*/ red, green, blue, led, segments, enable_segments,
         .r(cs_gpu & read),
         .hs(hsync),
         .vs(vsync),
-        .color(color));
-    assign red = color[2:0];
-    assign green = color[5:3];
-    assign blue = color[7:6];
+        .color(rgb));
     
     //ram
     wire cs_ram; assign cs_ram = !address_bus[15];

@@ -1,33 +1,39 @@
 module LedCounter(clk, data_bus, enable, write, segments, enable_segments);
-    inout [7:0] data_bus;
+    inout [15:0] data_bus;
     output [7:0] segments;
-    output reg [2:0] enable_segments;
-    reg [3:0] digits [1:0];
+    output reg [3:0] enable_segments;
+    reg [3:0] digits [3:0];
     reg [6:0] counter;
     input clk, enable, write;
 
     initial begin
         digits[0] = 4'h0;
         digits[1] = 4'h0;
+        digits[2] = 4'h0;
+        digits[3] = 4'h0;
         counter = 0;
     end
     
-    Digit dd(digits[counter[6]], segments);
+    Digit dd(digits[counter[6:5]], segments);
 
     always @(posedge write)
         if (enable) begin
             digits[0] <= data_bus[3:0];
             digits[1] <= data_bus[7:4];
+            digits[2] <= data_bus[11:8];
+            digits[3] <= data_bus[15:12];
         end
             
     always @(posedge clk)
         counter <= counter + 1;
         
     always @(counter)
-        case (counter[6:5])
-            2'b00: enable_segments = 3'b110;
-            2'b10: enable_segments = 3'b101;
-            default: enable_segments = 3'b111;
+        case (counter[6:4])
+            3'b000: enable_segments = 4'b1110;
+            3'b010: enable_segments = 4'b1101;
+            3'b100: enable_segments = 4'b1011;
+            3'b110: enable_segments = 4'b0111;
+            default: enable_segments = 4'b1111;
         endcase
         
 endmodule

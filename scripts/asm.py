@@ -270,14 +270,14 @@ class LineParser(object):
         rx = reg16_to_int(x[0])
         ry = reg16_to_int(y[0])
         return [
-            conv_to_word([5, 0b10111], [2, rx], [1, 0], [2, ry], [2, 0], [4, opcode])
+            conv_to_word([5, 0b10111], [1, 0], [2, rx], [1, 0], [2, ry], [1, 0], [4, opcode])
         ]
 
     def group_wrsmath(self, op, x):
         opcode = self.get_opcode(op, single_reg_opcodes16)
         rx = reg16_to_int(x[0])
         return [
-            conv_to_word([5, 0b11111], [2, rx], [5, 0], [4, opcode])
+            conv_to_word([5, 0b11111], [1, 0], [2, rx], [4, 0], [4, opcode])
         ]
 
     def group_sflag(self, flags):
@@ -339,7 +339,8 @@ class LineParser(object):
             bval = int(val)
 
         if bval < 0:
-            return (((bval * -1) & mask) ^ mask) + 1
+            bval = -bval
+            return ((bval & mask) ^ mask) + 1
         else:
             return bval & mask  
 

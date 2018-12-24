@@ -19,7 +19,7 @@ module Decoder(
     assign rg1 = word[0] ? word[7:5] : word[3:1];
     assign rg2 = word[10:8];
     assign operator = word[15:12];
-    assign relative_addr = word[7:0];
+    assign relative_addr = word[11:2];
     
     always @*
         casez (word[4:0])

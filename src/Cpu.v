@@ -90,7 +90,7 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
             CYCLE_0: cycle <= CYCLE_1;
             CYCLE_1: cycle <= CYCLE_2;
             CYCLE_2: cycle <= CYCLE_3;
-            CYCLE_3: cycle <= operator_group == `GROUP_SPECIAL_LONG && operator == `OP_CALL? CYCLE_4 : CYCLE_0;
+            CYCLE_3: cycle <= (operator_group == `GROUP_SPECIAL_LONG && operator == `OP_CALL) ? CYCLE_4 : CYCLE_0;
             CYCLE_4: cycle <= CYCLE_5;
             CYCLE_5: cycle <= CYCLE_0;
             default: cycle <= CYCLE_0;
@@ -99,7 +99,7 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     always @ (cycle or operator_group or operator)
         casez({cycle, operator_group})
             {CYCLE_1, 4'b????}: r = 1'b1;
-            {CYCLE_3, `GROUP_WRRMATH_MEM}: r = operator[2];
+            {CYCLE_3, `GROUP_WRRMATH_MEM}: r = !operator[2];
             {CYCLE_3, `GROUP_WRSMATH_STACK}: r = operator == `OP_POP;
             {CYCLE_3, `GROUP_SPECIAL}: r = operator == `OP_RET;
             default: r = 1'b0;
@@ -146,6 +146,7 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                     pc_register <= (
                         pc_register
                         + {{7{relative_addr[9]}}, relative_addr[8:0]}
+                        - 1
                     );
             end
             {CYCLE_2, `GROUP_SFLAG}: begin
@@ -163,8 +164,8 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                 alu_in[1] <= 16'h0000;
             end
             {CYCLE_3, `GROUP_WRRMATH}, {CYCLE_3, `GROUP_WRSMATH}: begin
-                if (operator == `OP_CMP) begin
-                    register_in[0] <= alu_out;
+                if (operator != `OP_CMP) begin
+                    register_in <= alu_out;
                     cs_write_registers <= 2'b01;
                 end
 
@@ -179,11 +180,11 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                 alu_in[1] <= {8'h00, num_rg2[0] ? register_out[1][15:8] : register_out[1][7:0]};
             end
             {CYCLE_3, `GROUP_CRRMATH}, {CYCLE_3, `GROUP_CRSMATH}, {CYCLE_3, `GROUP_CRVMATH}: begin
-                if (operator == `OP_CMP) begin
-                    register_in[0] <= (
+                if (operator != `OP_CMP) begin
+                    register_in <= (
                         num_rg1[0]
-                        ? {register_out[0][15:8], alu_out[7:0]}
-                        : {alu_out[15:8], register_out[0][7:0]}
+                        ? {alu_out[7:0], register_out[0][7:0]}
+                        : {register_out[0][15:8], alu_out[7:0]}
                     );
                     cs_write_registers <= 2'b01;
                 end

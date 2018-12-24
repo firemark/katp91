@@ -5,7 +5,7 @@ module tester();
     wire [15:0] address_bus;
     wire [15:0] data_bus;
 
-    wire [7:0] led;
+    wire [15:0] led;
 
     wire read, write, halt;
     
@@ -28,7 +28,7 @@ module tester();
     end
     
     wire cs_diodes; assign cs_diodes = address_bus[15:12] == 4'b1001;
-    Diodes diodes(data_bus[7:0], led, cs_diodes, write);
+    Diodes diodes(data_bus, led, cs_diodes, write);
 
     wire cs_ram; assign cs_ram = !address_bus[15];
     Ram ram(

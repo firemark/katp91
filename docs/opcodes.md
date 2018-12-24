@@ -27,14 +27,14 @@ A - operation
 X - number of 16bit register
 
 Register-Register 16bit operation
-WRRMATH   .1110.1XX-.YY--.AAAA.
+WRRMATH   .1110.1-XX.-YY-.AAAA.
           0    4    8   12   16
 A - operation
 X - number of first 16bit register
 Y - number of second 16bit register
 
 Register single 16bit operation
-WRSMATH   .1111.1XX-.----.AAAA.
+WRSMATH   .1111.1-XX.----.AAAA.
           0    4    8   12   16
 A - operation
 X - number of 16bit register
