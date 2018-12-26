@@ -7,3 +7,6 @@ output_files
 *.qws
 *.hex
 Vcpu
+src/testerCpu
+src/_xmsgs
+src/tmp

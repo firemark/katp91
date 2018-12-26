@@ -1,5 +1,4 @@
 `include "cpu_data.v"
-`define REGISTER_SIDE(r, n) {8'h00, n[0]? r[15:8] : r[7:0]}
 
 module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     input clk /*verilator clocker*/;
@@ -46,7 +45,20 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
     CheckBranch check_branch(
         .operator(operator),
         .flags(flags),
-        .is_checked(is_checked)
+        .is_checked(is_checked) 
+    );
+    
+    wire [15:0] int_address;
+    reg clr_int, support_int;
+    wire cauch_int, cauch_int_now;
+    assign cauch_int_now = cauch_int && flags[4];
+    IntAddrs module_int_addrs(
+        .clk(clk),
+        .reset(reset),
+        .ints(interrupts),
+        .int_address(int_address),
+        .cauch_int(cauch_int),
+        .clr_int(clr_int)
     );
 
     reg [1:0] cs_write_registers;
@@ -87,7 +99,7 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
         if (reset)
             cycle <= CYCLE_0;
         else case(cycle)
-            CYCLE_0: cycle <= CYCLE_1;
+            CYCLE_0: cycle <= support_int ? CYCLE_4 : CYCLE_1;
             CYCLE_1: cycle <= CYCLE_2;
             CYCLE_2: cycle <= CYCLE_3;
             CYCLE_3: cycle <= (operator_group == `GROUP_SPECIAL_LONG && operator == `OP_CALL) ? CYCLE_4 : CYCLE_0;
@@ -101,17 +113,30 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
             {CYCLE_1, 4'b????}: r = 1'b1;
             {CYCLE_3, `GROUP_WRRMATH_MEM}: r = !operator[2];
             {CYCLE_3, `GROUP_WRSMATH_STACK}: r = operator == `OP_POP;
-            {CYCLE_3, `GROUP_SPECIAL}: r = operator == `OP_RET;
-            default: r = 1'b0;
+            {CYCLE_3, `GROUP_SPECIAL}: r = operator == `OP_RET || operator == `OP_RETI;
+            {CYCLE_3, `GROUP_SPECIAL_LONG}: r = operator == `OP_CALL || operator == `OP_CALLI;
+            default: r = 1'b0; 
         endcase
         
     always @ (cycle or operator_group or operator)
         casez({cycle, operator_group})
             {CYCLE_3, `GROUP_WRRMATH_MEM}: _w = operator[2];
             {CYCLE_3, `GROUP_WRSMATH_STACK}: _w = operator == `OP_PUSH;
-            {CYCLE_5, `GROUP_SPECIAL_LONG}: _w = operator == `OP_CALL;
+            {CYCLE_5, `GROUP_SPECIAL_LONG}: _w = operator == `OP_CALL || operator == `OP_CALLI;
             default: _w = 1'b0;
         endcase
+        
+    task cycle_0_support; begin
+        address_bus <= pc_register;
+        clr_int <= 0;
+        if (cauch_int_now) begin
+            support_int <= 1;
+            flags[4] <= 0;
+            tmp_register <= int_address;
+            word <= 16'b1100000000011011;  // CALL OP
+        end else
+            support_int <= 0;
+    end; endtask
     
     always @ (negedge clk)
         if (reset) begin
@@ -120,6 +145,8 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
             sp_register <= 16'h07FF;
             cs_write_registers <= 2'b00;
             flags <= 8'h0;
+            support_int <= 0;
+            clr_int <= 0;
         end else casez ({cycle, operator_group})
             {CYCLE_0, `GROUP_WRRMATH_MEM}: begin
                 if (operator[1]) begin
@@ -130,11 +157,11 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                     register_in <= register_out[1] - 1;
                 end else
                     cs_write_registers <= 2'b00;
-                address_bus <= pc_register;
+                cycle_0_support(); 
             end
             {CYCLE_0, 4'b????}: begin
                 cs_write_registers <= 2'b00;
-                address_bus <= pc_register;
+                cycle_0_support();
             end
             {CYCLE_1, 4'b????}: begin
                 cs_write_registers <= 2'b00;
@@ -232,14 +259,14 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                     `OP_JMP: begin
                         pc_register <= data_bus;
                     end
-                    `OP_CALL: begin
+                    `OP_CALL, `OP_CALLI: begin
                         tmp_register <= data_bus;
                     end
                 endcase
             end
             {CYCLE_4, `GROUP_SPECIAL_LONG}: begin
                 case (operator)
-                    `OP_CALL: begin
+                    `OP_CALL, `OP_CALLI: begin
                         data_register <= pc_register;
                         sp_register <= sp_register - 1;
                         address_bus <= sp_register;
@@ -251,11 +278,15 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                     `OP_CALL: begin
                         pc_register <= tmp_register;
                     end
+                    `OP_CALLI: begin
+                        pc_register <= tmp_register;
+                        clr_int <= 1;
+                    end
                 endcase
             end
             {CYCLE_2, `GROUP_SPECIAL}: begin
-                case (operator)
-                    `OP_RET: begin
+                case (operator) 
+                    `OP_RET, `OP_RETI: begin
                         sp_register <= sp_register + 1;
                         address_bus <= sp_register + 1;
                     end
@@ -266,6 +297,10 @@ module Cpu(clk, reset, data_bus, address_bus, r, w, interrupts, halt);
                     `OP_RET: begin
                         pc_register <= data_bus;
                     end
+                    `OP_RETI: begin
+                        pc_register <= data_bus;
+                        flags[4] <= 1; // restore intterups
+                    end 
                 endcase
             end
         endcase

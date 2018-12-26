@@ -1,6 +1,7 @@
 module tester();
     reg clk;
     reg reset;
+    reg [7:0] interrupts;
 
     wire [15:0] address_bus;
     wire [15:0] data_bus;
@@ -16,8 +17,11 @@ module tester();
         clk = 0;
         reset = 1;
         counter = 0;
+        interrupts = 0;
         $dumpfile("dff.vcd");
         $dumpvars;
+        #10 interrupts[7] = 1;
+        #1 interrupts[7] = 0;
         #300 $finish;
     end
     
@@ -46,6 +50,6 @@ module tester();
         .address_bus(address_bus),
         .r(read),
         .w(write),
-        .interrupts(8'b0),
+        .interrupts(interrupts),
         .halt(halt));
 endmodule

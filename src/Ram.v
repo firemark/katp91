@@ -1,6 +1,6 @@
 module Ram(clk, data_bus, address_bus, enable, write, read);
     parameter RAM_BUS_SIZE = 11;
-    parameter RAM_SIZE = (2 << RAM_BUS_SIZE) - 1;
+    parameter RAM_SIZE = 1 << RAM_BUS_SIZE;
 
     inout [15:0] data_bus;
     input [RAM_BUS_SIZE - 1:0] address_bus;

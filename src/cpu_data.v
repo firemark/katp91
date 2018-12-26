@@ -53,10 +53,12 @@
 // Long operators
 `define OP_JMP 4'b1110
 `define OP_CALL 4'b1111
+`define OP_CALLI 4'b1100
 
 // Special operators
 `define OP_NOP 4'b0000
 `define OP_RET 4'b0001
+`define OP_RETI 4'b0010
 `define OP_HLT 4'b0111
 
 // Operator groups

@@ -1,26 +1,32 @@
-module Board(clkin, /*reset,*/ rgb, led, segments, enable_segments, hsync, vsync);
+module Board(clkin, /*reset,*/ rgb, led, segments, buttons, enable_segments, hsync, vsync);
     input clkin /*verilator clocker*/;
     reg reset;
     initial reset = 1;
 
     output [5:0] rgb;
     output hsync, vsync;
+    input [4:0] buttons;
     wire halt;
     
     wire [15:0] data_bus;
     wire [15:0] address_bus;
+    wire [7:0] interrupts;
     wire clk;
     wire write, read;
     
-    //diodes
-    output [15:0] led;
-    wire cs_diodes; assign cs_diodes = address_bus[15:12] == 4'b1001;
-    Diodes diodes(data_bus, led, cs_diodes, write);
+    //buttons
+    wire cs_buttons; assign cs_buttons = read && address_bus[15:12] == 4'hB;
+    Buttons module_buttons(data_bus, cs_buttons, interrupts[7], buttons);
     
+    //diodes
+    output [15:0] led; 
+    wire cs_diodes; assign cs_diodes = address_bus[15:12] == 4'h9;
+    Diodes diodes(data_bus, led, cs_diodes, write);
+     
     //led counter
     output [3:0] enable_segments;
     output [7:0] segments;
-    wire cs_led_counter; assign cs_led_counter = address_bus[15:12] == 4'b1010;
+    wire cs_led_counter; assign cs_led_counter = address_bus[15:12] == 4'hA;
     LedCounter led_counter(
         .clk(clk),
         .data_bus(data_bus),
@@ -79,7 +85,7 @@ module Board(clkin, /*reset,*/ rgb, led, segments, enable_segments, hsync, vsync
         .data_bus(data_bus),
         .address_bus(address_bus[10:0]),
         .enable(cs_ram),
-        .write(write),
+        .write(write), 
         .read(read));
         
     //cpu
@@ -90,7 +96,7 @@ module Board(clkin, /*reset,*/ rgb, led, segments, enable_segments, hsync, vsync
         .address_bus(address_bus),
         .r(read),
         .w(write),
-        .interrupts(8'b0),
+        .interrupts(interrupts),
         .halt(halt));
         
 endmodule

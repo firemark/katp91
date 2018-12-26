@@ -19,6 +19,7 @@ math_opcodes = {
 other_opcodes = {
     'NOP': 0b0000,
     'RET': 0b0001,
+    'RETI': 0b0010,
     'HLT': 0b0111,
 }
 
@@ -129,14 +130,14 @@ class LineParserError(Exception):
         return super().__init__(full_msg)
 
 
-def line_parse_safe(func):
+def line_parse_safe(func, default=None):
     @wraps(func)
     def inner(self, errs, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
         except LineParserError as e:
             errs.append(str(e))
-            return []
+            return default() if default else []
     inner.__name__ = 'safe_%s' % inner.__name__
     return inner
 
@@ -190,17 +191,24 @@ class LineParser(object):
             self.raise_error('syntax error')
         if part == ':':
             self.label = label.strip().upper()
+            if self.label is not None and self.label.startswith('.'):
+                new_addr = self.SPECIAL_LABELS.get(self.label)
+                if new_addr is None:
+                    self.raise_error('unknown special label: %s' % self.label)
 
         self.group = group_name
         self.data = match.groupdict()
 
+    SPECIAL_LABELS = {
+        '.MAIN': 0x2000,
+        '.BOOT': 0x0000,
+        '.MEM': 0x0400,
+        '.INT_BUTTONS': 0x0040,
+    }
     def get_new_addr_from_group(self, old_addr):
-        if self.label == '.MAIN':
-            return 0x2000
-        if self.label == '.BOOT':
-            return 0x0000
-        if self.label == '.MEM':
-            return 0x0400
+        if self.label is not None and self.label.startswith('.'):
+            new_addr = self.SPECIAL_LABELS[self.label]
+            return new_addr
         if self.data is None:
             return old_addr
         group = self.group
@@ -283,13 +291,13 @@ class LineParser(object):
     def group_sflag(self, flags):
         bitmask = self.get_flags(flags)
         return [
-            conf_to_word([5, 0b00011], [3, 0], [8, bitmask]),
+            conv_to_word([5, 0b00011], [3, 0], [8, bitmask]),
         ]
 
     def group_uflag(self, flags):
         bitmask = self.get_flags(flags)
         return [
-            conf_to_word([5, 0b10011], [3, 0], [8, bitmask]),
+            conv_to_word([5, 0b10011], [3, 0], [8, bitmask]),
         ]
 
     def group_branch(self, op, label):
@@ -356,7 +364,8 @@ class LineParser(object):
         return opcode
 
     FLAG_TO_BITMASK = {
-        'I': 1 << 4,
+        'H': 1 << 7,  # halt
+        'I': 1 << 4,  # interrupt
         'C': 1 << 3,  # carry
         'O': 1 << 2,  # overflow
         'Z': 1 << 1,  # zero
@@ -381,11 +390,15 @@ def parse_to_bytecode(data):
         LineParser(line, num)
         for num, line in enumerate(striped_lines, start=1)
     ]
-    addr = 0x0000
     for line_parser in lines:
         line_parser.safe_set_group_and_label(errs)
+    shout_errors(errs)
+
+    addr = 0x0000
+    for line_parser in lines:
         line_parser.addr = addr
         addr = line_parser.get_new_addr_from_group(addr)
+        
     labels = {
         line_parser.label: line_parser.addr 
         for line_parser in lines
